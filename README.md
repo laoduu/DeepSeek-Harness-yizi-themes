@@ -30,6 +30,8 @@
 
 ## 🖼️ 主题预览
 
+![DeepSeek Harness Yizi Themes 截图](assets/dsh-yizi-themes.png)
+
 | 主题 | 亮色基调 | 深色基调 | 设计语言 |
 |---|---|---|---|
 | **学术蓝** `academic` | 淡蓝白 `#f5f8ff` | 深蓝黑 `#0d1117` | #002FA7 深蓝品牌，沉稳专业 |

@@ -22,6 +22,12 @@ Every theme ships both **light / dark** palettes and follows your "Light / Dark 
 
 ---
 
+## 🖼️ Theme Preview
+
+![DeepSeek Harness Yizi Themes screenshot](assets/dsh-yizi-themes.png)
+
+---
+
 ## 📦 Installation
 
 > **Prerequisite**: a working DeepSeek Harness checkout (i.e. you can run `pnpm dsh web`).

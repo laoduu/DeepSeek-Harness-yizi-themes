@@ -198,6 +198,8 @@ pnpm dsh web
 
 <div align="center">
 
+> A third-party `dsh-plugin` that brings 19 YiziMarkdown themes to DeepSeek Harness.
+
 **如果这个项目对你有帮助，欢迎 ⭐ Star 支持！**
 
 </div>

@@ -161,5 +161,5 @@ Pull requests welcome:
 
 [MIT](LICENSE) © [laoduu](https://github.com/laoduu)
 
-This project is a third-party theme extension for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT);
+This project is a third-party [`dsh-plugin`](https://github.com/topics/dsh-plugin) that brings 19 YiziMarkdown themes to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness);
 the theme design language is ported from [YiziMarkdown](https://github.com/laoduu/YiziMarkdown).

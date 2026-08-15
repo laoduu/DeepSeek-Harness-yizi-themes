@@ -1,0 +1,17 @@
+# Node / pnpm
+node_modules/
+*.tsbuildinfo
+lib/
+dist/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Installer backups (created in the target Harness repo, not here)
+.dsh-yizi-themes-backup/
+
+# Archives
+*.zip

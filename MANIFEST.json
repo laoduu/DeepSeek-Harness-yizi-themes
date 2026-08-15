@@ -1,0 +1,68 @@
+{
+  "name": "dsh-yizi-themes",
+  "version": "1.0.0",
+  "description": "YiziMarkdown theme pack for DeepSeek Harness - 19 style themes",
+  "target": {
+    "harness": "@deepseek-ai/dsh",
+    "harnessVersion": "0.1.0-rc.5",
+    "buildCommands": {
+      "all": ["pnpm install", "pnpm run build", "pnpm dsh web"],
+      "quick": ["pnpm run build", "pnpm dsh web"]
+    }
+  },
+  "files": {
+    "replace": [
+      "packages/client/ui-theme/tsdown.config.ts",
+      "packages/client/ui-theme/src/theme-settings.ts",
+      "packages/client/ui-theme/src/boot-theme.ts",
+      "packages/client/ui-theme/src/index.ts",
+      "packages/client/ui-theme/src/client/index.ts",
+      "packages/client/ui-theme/src/client/AppearanceRow.tsx",
+      "packages/client/ui-theme/src/client/AppearanceRow.module.css",
+      "packages/client/ui-theme/src/client/settings-store.ts",
+      "packages/client/ui-theme/src/client/locales.ts",
+      "packages/client/ui-layout/src/client/theme-presenter.ts",
+      "packages/client/web/src/base.css",
+      "scripts/gen-cordis-inspect-catalog.ts",
+      "packages/extensions/cordis-client-runner/src/client/api-catalog.ts",
+      "packages/client/ui-theme/tests/theme.client.spec.ts",
+      "packages/client/ui-theme/tests/appearance-row.client.spec.tsx",
+      "packages/client/ui-theme/tests/apply.client.spec.ts",
+      "packages/client/ui-theme/tests/boot-theme.client.spec.ts",
+      "packages/client/ui-theme/tests/host.client.spec.ts",
+      "packages/client/ui-theme/tests/settings-store.client.spec.ts",
+      "packages/client/ui-layout/tests/theme-presenter.client.spec.ts",
+      "packages/client/ui-theme/README.md",
+      "packages/client/ui-theme/README.zh.md",
+      "packages/client/ui-theme/README.i18n.yaml"
+    ],
+    "add": [
+      "packages/client/ui-theme/src/styles/themes/academic.css",
+      "packages/client/ui-theme/src/styles/themes/aurora.css",
+      "packages/client/ui-theme/src/styles/themes/cyberpunk.css",
+      "packages/client/ui-theme/src/styles/themes/facebook.css",
+      "packages/client/ui-theme/src/styles/themes/liquidglass.css",
+      "packages/client/ui-theme/src/styles/themes/lychee.css",
+      "packages/client/ui-theme/src/styles/themes/magazine.css",
+      "packages/client/ui-theme/src/styles/themes/matrix.css",
+      "packages/client/ui-theme/src/styles/themes/minimal.css",
+      "packages/client/ui-theme/src/styles/themes/mint.css",
+      "packages/client/ui-theme/src/styles/themes/morandi.css",
+      "packages/client/ui-theme/src/styles/themes/nature.css",
+      "packages/client/ui-theme/src/styles/themes/palace.css",
+      "packages/client/ui-theme/src/styles/themes/sunset.css",
+      "packages/client/ui-theme/src/styles/themes/tech.css",
+      "packages/client/ui-theme/src/styles/themes/typewriter.css",
+      "packages/client/ui-theme/src/styles/themes/vaporwave.css",
+      "packages/client/ui-theme/src/styles/themes/vibrant.css",
+      "packages/client/ui-theme/src/styles/themes/violet.css"
+    ]
+  },
+  "postInstall": {
+    "warn": [
+      "Back up uncommitted changes in the Harness repo before installing (git stash or copy the repo).",
+      "A rebuild is required after install: pnpm run build (about 1-3 minutes).",
+      "Reinstalling over a previous install is safe; files are simply overwritten."
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+/* Shell-owned global base: full-height mount plus the theme token sheets.
+ * The five ui-theme sheets are the sole token source (--dsw-*); the shell
+ * links them here so tokens exist before any plugin CSS lands. scrollbar.css
+ * follows design-platform.css because it reads that sheet's tokens. */
+@import '@deepseek-ai/dsh-client-ui-theme/styles/base.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/design-platform.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/scrollbar.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/gradient-shadow-text.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/shiki.css';
+/* Style-theme overrides sheets: all load statically; each keys off
+   `body.theme-<id>` (plus `[data-ds-dark-theme]` for the dark block), so the
+   presenter's class switch activates exactly one. The dark block must follow
+   design-platform.css's `body[data-ds-dark-theme]` block to win the cascade. */
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/academic.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/aurora.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/cyberpunk.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/facebook.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/liquidglass.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/lychee.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/magazine.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/matrix.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/minimal.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/mint.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/morandi.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/nature.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/palace.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/sunset.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/tech.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/typewriter.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/vaporwave.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/vibrant.css';
+@import '@deepseek-ai/dsh-client-ui-theme/styles/themes/violet.css';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--dsw-font-family);
+  /* Grayscale antialiasing over subpixel rendering: WebKit/Blink and the
+     Firefox macOS equivalent; other engines ignore both lines. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+}
+
+/* Form controls don't inherit the body font (UA sheets pin their families —
+   Chrome buttons fall back to Arial, textareas to monospace), so the app
+   stack is re-applied to them explicitly, as upstream's global reset does. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

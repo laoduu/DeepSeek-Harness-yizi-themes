@@ -1,0 +1,199 @@
+/* ═══════════════════════════════════════════════════════════════
+   Facebook (Meta) — DeepSeek Harness 主题
+
+   设计语言移植自 YiziMarkdown code/src-tauri/themes/facebook.css：
+   还原 Facebook 的社交平台视觉——灰白底+白卡片、
+   #1877F2 品牌蓝、卡片式容器、圆角+阴影。
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-facebook {
+  /* 背景层 */
+  --dsw-alias-bg-base: #f0f2f5;
+  --dsw-alias-bg-layer-1: #ffffff;
+  --dsw-alias-bg-layer-2: #e4e6eb;
+  --dsw-alias-bg-layer-3: #d8dadf;
+  --dsw-alias-bg-overlay: #e4e6eb;
+  --dsw-alias-bg-module-platform: #ffffff;
+  --dsw-alias-bg-multi-select: #e4e6eb;
+  --dsw-alias-bg-skeleton: rgba(24, 119, 242, 0.08);
+
+  /* 文字层 */
+  --dsw-alias-label-primary: #050505;
+  --dsw-alias-label-primary-dimmed: #1a1a1a;
+  --dsw-alias-label-primary-bluish: #1877f2;
+  --dsw-alias-label-secondary: #65676b;
+  --dsw-alias-label-tertiary: #7a7c80;
+  --dsw-alias-label-caption: #8a8c90;
+  --dsw-alias-label-dimmed: #9a9ca0;
+
+  /* 边框层 */
+  --dsw-alias-border-l1: rgba(5, 5, 5, 0.06);
+  --dsw-alias-border-l2: rgba(5, 5, 5, 0.12);
+  --dsw-alias-border-l3: rgba(5, 5, 5, 0.18);
+  --dsw-alias-border-l4: rgba(5, 5, 5, 0.24);
+
+  /* 品牌与按钮 */
+  --dsw-alias-brand-primary: #1877f2;
+  --dsw-alias-brand-text: #1665d8;
+  --dsw-alias-brand-primary-invert: #e4e6eb;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #1877f2;
+  --dsw-alias-button-primary-fill: #1877f2;
+  --dsw-alias-button-primary-hover: #1665d8;
+  --dsw-alias-button-primary-dimmed: #c8dcfa;
+  --dsw-alias-button-info-fill: #1877f2;
+  --dsw-alias-button-info-hover: #3a8cf4;
+  --dsw-alias-button-contrast-fill: #1058b8;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #e4e6eb;
+  --dsw-alias-button-ghost-active-fill: #c8dcfa;
+  --dsw-alias-button-ghost-active-hover: #b4d0f4;
+  --dsw-alias-button-ghost-active-border: #5aa0f4;
+
+  /* 交互层 */
+  --dsw-alias-interactive-bg-hover: rgba(24, 119, 242, 0.06);
+  --dsw-alias-interactive-bg-active: rgba(24, 119, 242, 0.12);
+  --dsw-alias-interactive-bg-hover-accent: rgba(24, 119, 242, 0.12);
+  --dsw-alias-interactive-bg-hover-solid: #e4e6eb;
+
+  /* 状态层 */
+  --dsw-alias-state-business-primary: #1877f2;
+  --dsw-alias-state-business-tertiary: #c8dcfa;
+  --dsw-alias-state-error-primary: #d04545;
+  --dsw-alias-state-error-secondary: #e05c5c;
+  --dsw-alias-state-success-primary: #2e9a4e;
+  --dsw-alias-state-success-secondary: #48b86a;
+  --dsw-alias-state-success-tertiary: #d2eee0;
+  --dsw-alias-state-warn-primary: #b8902e;
+  --dsw-alias-state-warn-secondary: #d0a84a;
+  --dsw-alias-state-warn-tertiary: #f0e8c8;
+
+  /* Markdown 渲染 */
+  --dsw-alias-markdown-code-block: #e4e6eb;
+  --dsw-alias-markdown-code-block-banner: #d8dadf;
+  --dsw-alias-markdown-inline-code: #c8dcfa;
+  --dsw-alias-markdown-code-segment-selected: #ffffff;
+  --dsw-alias-markdown-code-segment-unselected: #d8dadf;
+  --dsw-alias-markdown-tag: #d8dadf;
+  --dsw-alias-markdown-placeholder: #e4e6eb;
+  --dsw-alias-markdown-citation: #e4e6eb;
+
+  /* 特定区域 */
+  --dsw-specific-bubble: #ffffff;
+  --dsw-specific-bubble-highlight: #c8dcfa;
+  --dsw-specific-sidebar-fill: #ffffff;
+  --dsw-specific-sidebar-nav-item-active: #e4e6eb;
+  --dsw-specific-sidebar-nav-item-active-accent: #c8dcfa;
+  --dsw-specific-sidebar-nav-item-hover: #e4e6eb;
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-login-input: #e4e6eb;
+  --dsw-specific-menu: #ffffff;
+  --dsw-specific-selector: #e4e6eb;
+  --dsw-specific-tip: #ffffff;
+
+  /* 滚动条 */
+  --dsw-alias-scrollbar-bg-l1: #c8cacc;
+  --dsw-alias-scrollbar-bg-l2: #b8babd;
+  --dsw-alias-scrollbar-hover-l1: #a4a6a8;
+  --dsw-alias-scrollbar-hover-l2: #909296;
+
+  /* 浮层 */
+  --dsw-alias-toast-bg: #1a1a1a;
+  --dsw-alias-tooltip-bg: #1a1a1a;
+}
+
+body.theme-facebook[data-ds-dark-theme] {
+  /* 背景层 */
+  --dsw-alias-bg-base: #18191a;
+  --dsw-alias-bg-layer-1: #242526;
+  --dsw-alias-bg-layer-2: #2e3031;
+  --dsw-alias-bg-layer-3: #3a3b3c;
+  --dsw-alias-bg-overlay: #3a3b3c;
+  --dsw-alias-bg-module-platform: #242526;
+  --dsw-alias-bg-multi-select: #3a3b3c;
+  --dsw-alias-bg-skeleton: rgba(45, 136, 255, 0.08);
+
+  /* 文字层 */
+  --dsw-alias-label-primary: #e4e6eb;
+  --dsw-alias-label-primary-dimmed: #c0c4cc;
+  --dsw-alias-label-primary-bluish: #2d88ff;
+  --dsw-alias-label-secondary: #a8a8a8;
+  --dsw-alias-label-tertiary: #909090;
+  --dsw-alias-label-caption: #808080;
+  --dsw-alias-label-dimmed: #707070;
+
+  /* 边框层 */
+  --dsw-alias-border-l1: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2: rgba(255, 255, 255, 0.12);
+  --dsw-alias-border-l3: rgba(255, 255, 255, 0.18);
+  --dsw-alias-border-l4: rgba(255, 255, 255, 0.24);
+
+  /* 品牌与按钮 */
+  --dsw-alias-brand-primary: #2d88ff;
+  --dsw-alias-brand-text: #4da3ff;
+  --dsw-alias-brand-primary-invert: #18191a;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #2d88ff;
+  --dsw-alias-button-primary-fill: #1a5eb8;
+  --dsw-alias-button-primary-hover: #2d88ff;
+  --dsw-alias-button-primary-dimmed: #3a3b3c;
+  --dsw-alias-button-info-fill: #2d88ff;
+  --dsw-alias-button-info-hover: #1a5eb8;
+  --dsw-alias-button-contrast-fill: #8ec3ff;
+  --dsw-alias-button-elevated-fill: #3a3b3c;
+  --dsw-alias-button-floating-fill: #2e3031;
+  --dsw-alias-button-floating-hover: #3a3b3c;
+  --dsw-alias-button-ghost-active-fill: #3a3b3c;
+  --dsw-alias-button-ghost-active-hover: #444648;
+  --dsw-alias-button-ghost-active-border: #2d88ff;
+
+  /* 交互层 */
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.06);
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.12);
+  --dsw-alias-interactive-bg-hover-accent: rgba(45, 136, 255, 0.14);
+  --dsw-alias-interactive-bg-hover-solid: #3a3b3c;
+
+  /* 状态层 */
+  --dsw-alias-state-business-primary: #2d88ff;
+  --dsw-alias-state-business-tertiary: #2e3031;
+  --dsw-alias-state-error-primary: #f06060;
+  --dsw-alias-state-error-secondary: #e05050;
+  --dsw-alias-state-success-primary: #48c878;
+  --dsw-alias-state-success-secondary: #48b86a;
+  --dsw-alias-state-success-tertiary: #16301e;
+  --dsw-alias-state-warn-primary: #d8b040;
+  --dsw-alias-state-warn-secondary: #c0a02e;
+  --dsw-alias-state-warn-tertiary: #322a14;
+
+  /* Markdown 渲染 */
+  --dsw-alias-markdown-code-block: #2e3031;
+  --dsw-alias-markdown-code-block-banner: #3a3b3c;
+  --dsw-alias-markdown-inline-code: #3a3b3c;
+  --dsw-alias-markdown-code-segment-selected: #2e3031;
+  --dsw-alias-markdown-code-segment-unselected: #242526;
+  --dsw-alias-markdown-tag: #3a3b3c;
+  --dsw-alias-markdown-placeholder: #2e3031;
+  --dsw-alias-markdown-citation: #3a3b3c;
+
+  /* 特定区域 */
+  --dsw-specific-bubble: #2e3031;
+  --dsw-specific-bubble-highlight: #3a3b3c;
+  --dsw-specific-sidebar-fill: #242526;
+  --dsw-specific-sidebar-nav-item-active: #3a3b3c;
+  --dsw-specific-sidebar-nav-item-active-accent: #444648;
+  --dsw-specific-sidebar-nav-item-hover: #2e3031;
+  --dsw-specific-input-major: #2e3031;
+  --dsw-specific-login-input: #242526;
+  --dsw-specific-menu: #2e3031;
+  --dsw-specific-selector: #3a3b3c;
+  --dsw-specific-tip: #2e3031;
+
+  /* 滚动条 */
+  --dsw-alias-scrollbar-bg-l1: #3a3b3c;
+  --dsw-alias-scrollbar-bg-l2: #444648;
+  --dsw-alias-scrollbar-hover-l1: #4e5052;
+  --dsw-alias-scrollbar-hover-l2: #585a5c;
+
+  /* 浮层 */
+  --dsw-alias-toast-bg: #444648;
+  --dsw-alias-tooltip-bg: #444648;
+}

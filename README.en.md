@@ -62,10 +62,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.2.3.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.2.4.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.3/dsh-yizi-themes-0.2.3.tgz
+curl -L -o dsh-yizi-themes-0.2.4.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.4/dsh-yizi-themes-0.2.4.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -73,7 +73,7 @@ curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.3.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.4.tgz
 ```
 
 4. Restart:

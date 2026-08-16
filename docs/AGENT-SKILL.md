@@ -29,10 +29,10 @@ git clone https://github.com/laoduu/DeepSeek-Harness-yizi-themes.git "$PLUGIN"
 
 **方式 B：直接下载发布包 tgz（推荐，跳过构建）**
 
-当前版本 **v0.2.3** 的准确下载地址：
+当前版本 **v0.2.4** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.3/dsh-yizi-themes-0.2.3.tgz
+curl -L -o dsh-yizi-themes-0.2.4.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.4/dsh-yizi-themes-0.2.4.tgz
 ```
 
 下载到本地即可，跳过第 2 步构建。新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases)
@@ -75,7 +75,7 @@ CLI 会：在 profile（`$DSH_HOME/profiles/web`）里加依赖 → pnpm 安装 
 
 **同版本 tgz 内容变了再 `add` 是无效的** —— pnpm 报 `Already up to date`，`node_modules` 里还是旧代码。
 
-- 版本号变了（如 0.2.0 → 0.2.3）：直接 `add` 即可，pnpm 会重新安装；
+- 版本号变了（如 0.2.3 → 0.2.4）：直接 `add` 即可，pnpm 会重新安装；
 - 版本号没变：必须**先 remove 再 add**：
 
 ```bash

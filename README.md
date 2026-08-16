@@ -66,10 +66,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.2.3.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.2.4.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.3/dsh-yizi-themes-0.2.3.tgz
+curl -L -o dsh-yizi-themes-0.2.4.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.4/dsh-yizi-themes-0.2.4.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -77,7 +77,7 @@ curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.3.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.4.tgz
 ```
 
 4. 重启：

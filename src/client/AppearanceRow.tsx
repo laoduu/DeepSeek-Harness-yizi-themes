@@ -1,25 +1,20 @@
 /**
  * Appearance preference row registered into the General section item slot:
- * title + a mode cube row (light/dark/system) + a style-theme swatch grid +
- * a custom-brand configuration block. Registered by this plugin with the same
- * id as the core AppearanceRow so it replaces it while loaded.
+ * a style-theme swatch grid + a custom-brand configuration block. The light /
+ * dark / system mode cubes are intentionally NOT duplicated here — the core
+ * Appearance row (or the top-right mode toggle) already provides them, so
+ * this row starts straight at the theme grid.
  */
-import {
-  IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ThemePreference } from './theme-settings.ts'
 import { DEFAULT_THEME } from './theme-settings.ts'
 import type { CustomBrandConfig } from './theme-settings.ts'
 import type { ThemeKey } from './locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { createAppearanceRowStore } from './settings-store.ts'
-import type { ThemeDefinition } from './theme-settings.ts'
+import type { ThemeDefinition } from './themes-list.ts'
 
-/** Injected business face: the preference/theme/custom-brand writes. */
+/** Injected business face: the theme/custom-brand writes. */
 export interface AppearanceRowInjected {
-  /** Switch the theme preference. */
-  setTheme: (id: ThemePreference) => void
   /** Switch the style theme (a registered theme id or `default`). */
   setThemeId: (id: string) => void
   /** Switch the custom brand configuration. */
@@ -30,13 +25,6 @@ export interface AppearanceRowInjected {
 export type AppearanceRowComponentProps =
   PropsRuntime<'settings.general.item'> & PropsStore<ReturnType<typeof createAppearanceRowStore>>
   & PropsLocale<'yizi.theme'> & AppearanceRowInjected
-
-/** Mode cube order and icons. */
-const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof IconLightOutline16 }[] = [
-  { id: 'light', labelKey: 'appearance.light', Icon: IconLightOutline16 },
-  { id: 'dark', labelKey: 'appearance.dark', Icon: IconDarkOutline16 },
-  { id: 'system', labelKey: 'appearance.system', Icon: IconFollowsystemOutline16 },
-]
 
 /** Swatch gradient fallback when a theme declares none. */
 const FALLBACK_SWATCH: [string, string] = ['#e8ecf0', '#c0c8d4']
@@ -51,6 +39,7 @@ function defaultEntry(): ThemeDefinition {
     colorScheme: 'light',
     tokens: {},
     name: '',
+    desc: '',
     swatch: FALLBACK_SWATCH,
   }
 }
@@ -76,8 +65,7 @@ function MarkupPreview({ markup, className }: { markup: string; className?: stri
  * @param props - composed slot props.
  * @returns the row element tree.
  */
-export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStore }: AppearanceRowComponentProps) {
-  const preference = useStore(s => s.preference)
+export function AppearanceRow({ t, setThemeId, setCustomBrand, useStore }: AppearanceRowComponentProps) {
   const themeId = useStore(s => s.theme)
   const themes = useStore(s => s.themes)
   const customBrand = useStore(s => s.customBrand)
@@ -92,20 +80,6 @@ export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStor
   return (
     <div className="dsw-yizi-group">
       <div className="dsw-yizi-title">{t('appearance.title')}</div>
-      <div className="dsw-yizi-cube-row">
-        {CUBES.map(({ id, labelKey, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            className={cx('dsw-yizi-theme-cube', preference === id && 'dsw-yizi-selected')}
-            aria-pressed={preference === id}
-            onClick={() => { setTheme(id) }}
-          >
-            <Icon />
-            {t(labelKey)}
-          </button>
-        ))}
-      </div>
       {entries.length > 1 && (
         <>
           <div className="dsw-yizi-section-title">{t('appearance.themes')}</div>

@@ -20,6 +20,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 🎭 **19 themes**: from flowing auroras to cyberpunk neon, from Morandi greys to Forbidden-City vermilion
 - 🌗 **Dual mode**: every theme has hand-tuned light/dark token pairs, auto-switching with your system
 - 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
+- ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no patch needed on official source or the npm-published rc.5
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
 - 🔤 **Prompt mapping**: replace "DeepSeek / 深度求索 / Harness" in prompts at output time
@@ -61,10 +62,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.2.0.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.2.3.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.2.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.0/dsh-yizi-themes-0.2.0.tgz
+curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.3/dsh-yizi-themes-0.2.3.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -72,7 +73,7 @@ curl -L -o dsh-yizi-themes-0.2.0.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.0.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.3.tgz
 ```
 
 4. Restart:
@@ -180,7 +181,10 @@ Check whether `$DSH_HOME/settings.yaml` gained a `ui-theme.customBrand` section.
 Make sure the logo/wordmark is set and uses `currentColor` or `var(--dsw-alias-brand-primary)`; hardcoded colors never adapt.
 
 **Q: Blank sidebar after collapse/expand?**
-Old bug — upgrade to 0.2.0+.
+Old bug — upgrade to 0.2.2+.
+
+**Q: Does it work on stock Harness (official source / npm-published rc.5)?**
+Yes. Since 0.2.1 the plugin implements the style-theme dimension itself (persisted in localStorage + applies `body.theme-<id>` directly), so no core patch is needed; light/dark still goes through the core. On cores that DO expose setThemeId (old patch or a fork with the feature), it automatically uses the core path (persisted in settings.yaml).
 
 **Q: Want an agent to install it for you?**
 Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.

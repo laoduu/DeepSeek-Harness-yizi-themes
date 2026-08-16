@@ -21,36 +21,6 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   margin-top: 8px;
 }
 
-.dsw-yizi-cube-row {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.dsw-yizi-theme-cube {
-  box-sizing: border-box;
-  flex: 1 1 180px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 20px 32px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 16px;
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--dsw-alias-label-primary);
-  cursor: pointer;
-}
-
-.dsw-yizi-theme-cube:hover:not(.dsw-yizi-selected) {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
 .dsw-yizi-selected {
   background: var(--dsw-alias-bg-module-platform);
   border-color: var(--dsw-alias-brand-primary);

@@ -21,6 +21,7 @@ import brandOverrideCss from './brand-overrides.ts'
 import { HeaderControls } from './HeaderControls.tsx'
 import type { HeaderControlsProps } from './HeaderControls.tsx'
 import { mountFloatingControls } from './FloatingControls.tsx'
+import { createThemeBackend } from './theme-backend.ts'
 import { applyBrand } from './brand-apply.ts'
 
 /** Plugin identity. */
@@ -54,7 +55,10 @@ function readCoreTheme(ctx: Context): { preference: ThemeSettings['preference'];
   const runtime = ctx.get('theme') as ThemeRuntime | undefined
   if (runtime === undefined) return { preference: 'system', theme: 'default' }
   const snapshot = runtime.getTheme()
-  return { preference: snapshot.preference, theme: snapshot.theme }
+  // Older Harness builds (e.g. the npm-published rc.5) have no style-theme
+  // dimension: the snapshot lacks `theme`. Treat it as the default.
+  const theme = typeof snapshot.theme === 'string' ? snapshot.theme : 'default'
+  return { preference: snapshot.preference, theme }
 }
 
 /** Apply brand mappings to every text node under a root element. */
@@ -111,11 +115,10 @@ function buildInjected(
   ctx: ClientContext,
   settings: CustomBrandConfig,
   setSettings: (patch: Partial<CustomBrandConfig>) => void,
+  writeThemeId: (id: string) => void,
 ): AppearanceRowInjected {
-  const runtime = ctx.theme as ThemeRuntime
   return {
-    setTheme: (id) => { runtime.setTheme(id) },
-    setThemeId: (id) => { runtime.setThemeId(id) },
+    setThemeId: (id) => { writeThemeId(id) },
     setCustomBrand: (patch) => { setSettings(patch) },
   }
 }
@@ -124,19 +127,25 @@ export function apply(ctx: ClientContext): void {
   // ── Inject all style sheets ────────────────────────────────────────────
   injectThemeSheets()
 
+  const runtime = ctx.theme as ThemeRuntime
+
+  // ── Style-theme backend ─────────────────────────────────────────────────
+  // Stock Harness lacks the orthogonal style-theme dimension; the backend
+  // uses the core's setThemeId when present (settings.yaml persistence) and
+  // otherwise implements it itself (localStorage + body.theme-<id> class).
+  const themeBackend = createThemeBackend(runtime, ctx)
+  // Restore the persisted theme on boot (plugin path only).
+  themeBackend.reassert()
+
   // ── Register session-header controls (theme picker + mode toggle) ──────
   // The utilities list renders at the right edge of the session header title
   // row; order 10 places them AFTER the session-log export button (order 0),
   // i.e. at the far top-right of the page.
-  const runtime = ctx.theme as ThemeRuntime
   const headerFace = (): HeaderControlsProps => ({
-    getTheme: () => runtime.getTheme(),
+    getTheme: () => themeBackend.getTheme(),
     setPreference: (id: 'light' | 'dark' | 'system') => { runtime.setTheme(id) },
-    setThemeId: (id: string) => { runtime.setThemeId(id) },
-    subscribe: (listener: () => void) => {
-      const off = ctx.on('theme/change', listener)
-      return () => { off() }
-    },
+    setThemeId: (id: string) => { themeBackend.setThemeId(id) },
+    subscribe: (listener: () => void) => themeBackend.subscribe(listener),
   })
   ctx.slots.inject(
     'conversation.session.header.utilities',
@@ -155,6 +164,26 @@ export function apply(ctx: ClientContext): void {
   // only while the hero is present and hidden once a session header exists.
   const floating = mountFloatingControls(headerFace())
   ctx.effect(() => () => floating.dispose(), 'dsh-yizi-themes: floating controls')
+
+  // ── Self-register any shipped themes the core registry lacks ───────────
+  // Only relevant on cores that HAVE the style-theme API (coreThemeApi): a
+  // core that gained setThemeId but dropped the built-in list still gets our
+  // 19 registered, so setThemeId validation and the theme grid always see
+  // every shipped id. The plugin path needs no registration.
+  if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
+    const existing = new Set(runtime.getTheme().themes.map(t => t.id))
+    for (const theme of THEMES) {
+      if (existing.has(theme.id)) continue
+      runtime.register({
+        id: theme.id,
+        colorScheme: theme.colorScheme,
+        tokens: {},
+        name: theme.name,
+        swatch: theme.swatch,
+        desc: theme.desc,
+      })
+    }
+  }
 
   // ── Custom-brand settings transport ────────────────────────────────────
   // The api-proxy exposes only allowlisted namespaces to the browser (adding
@@ -217,18 +246,22 @@ export function apply(ctx: ClientContext): void {
   /** Mirror one settings snapshot into the row store (bumped seq skips staleness). */
   const push = (settings: CustomBrandConfig): void => {
     const core = readCoreTheme(ctx)
-    bound?.sync(core.preference, core.theme, THEMES, settings, ++syncSeq)
+    // Theme id comes from the style-theme backend (core field or localStorage),
+    // so the grid highlight matches reality on every Harness build.
+    bound?.sync(core.preference, themeBackend.readThemeId(), THEMES, settings, ++syncSeq)
   }
   const sync = (): void => {
     push(readSettings())
   }
-  ctx.on('theme/change', sync)
+  // Re-sync on both core theme/change (preference, core-path theme id) and
+  // local emitter changes (plugin-path theme id).
+  ctx.effect(() => themeBackend.subscribe(sync), 'dsh-yizi-themes: theme state adoption')
   ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'dsh-yizi-themes: row dictionaries')
 
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
     bound = actions
     sync()
-    return buildInjected(ctx, readSettings(), setCustomBrand)
+    return buildInjected(ctx, readSettings(), setCustomBrand, (id) => themeBackend.setThemeId(id))
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
@@ -244,6 +277,8 @@ export function apply(ctx: ClientContext): void {
     () => readSettings().mappings,
     () => {
       applyBrand(readSettings())
+      // Plugin-path themes re-assert the body class after any DOM churn.
+      themeBackend.reassert()
       // Show the floating controls only while the hero (blank session) is up.
       floating.sync()
     },

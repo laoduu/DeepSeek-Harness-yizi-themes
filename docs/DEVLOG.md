@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-08-16 · v0.2.1–v0.2.3：兼容干净 Harness
+
+### 真相澄清：风格主题本就不在官方源码里
+
+- 此前一直以为"风格主题"是 Harness 官方功能，直到在第二台机器（干净源码 / npm 发布的 rc.5）上测试：换主题报 `runtime.setThemeId is not a function`。
+- 用户指正后确认：**`setThemeId` / `theme` 设置字段 / 主题注册表 / `body.theme-<id>` 切换，是早期 v1 patch 方案给核心加的**，官方源码没有；机器 1 能用是因为还残留着 patch。
+- 结论：插件不能依赖核心的这套 API，必须自己实现。
+
+### 风格主题后端（theme-backend.ts）
+
+- 统一抽象，自动探测核心能力：
+  - **核心路径**（有 `setThemeId`，如打过 patch / 含该特性的构建）：读写走核心，持久化到 `settings.yaml`，class 由核心 presenter 切换；
+  - **插件路径**（干净 Harness）：主题 id 存 `localStorage`（`dsh-yizi-themes:themeId`），自行切换 `body.theme-<id>`，本地事件发射器通知刷新；明暗仍走核心 preference。
+- `getTheme` 快照做了身份缓存（useSyncExternalStore 要求快照稳定）。
+- jsdom 18 项测试覆盖两条路径：持久化、class 应用/切换/清除、通知、快照稳定、preference 联动、reassert。
+
+### 0.2.2 回归：设置行消失
+
+- 症状：头部主题切换正常，但设置 → 通用 的外观设置项整体消失。
+- 报错：`ReferenceError: setThemeId is not defined at injected(...)`。
+- 根因：重构后端时漏改 `injected()`，仍引用已不存在的裸变量 `setThemeId`（tsdown 不做类型检查，运行时才炸）。
+- 教训：**给构建补了 tsc 类型检查**（`tsconfig.json`），还顺手修掉 3 个潜在类型错误（`ThemeDefinition` 导入源、`defaultEntry` 缺 `desc`、主题下拉渲染不存在的 `desc`）。
+
+### 0.2.3：设置面板去重
+
+- 用户反馈设置面板出现两组相同的外观（原生 + 插件各一组明暗模式块）。
+- 删除插件外观行里重复的明暗模式块，直接从"主题"网格开始（原生行或右上角切换已覆盖明暗）。
+
+---
+
 ## 2026-08-16 · v0.2.0 收尾
 
 ### 品牌自定义闭环

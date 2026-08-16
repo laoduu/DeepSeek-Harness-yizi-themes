@@ -1,5 +1,48 @@
 # 版本日志 / Changelog
 
+## 0.2.3 — 2026-08-16
+
+> 设置面板去重：不再重复原生"浅色/深色/跟随系统"模式块。
+
+### 变更
+
+- **设置 → 通用 外观行从"主题"直接开始**：删除插件外观行里与原生重复的明暗模式块（原生行或右上角切换已提供），保留主题网格 + 自定义品牌（Logo/字样/徽章/标题/品牌映射）。顺带清理未用的图标导入与 locale 键。
+
+---
+
+## 0.2.2 — 2026-08-16
+
+> 修复 0.2.1 引入的设置页回归：外观设置项（主题网格 / 自定义品牌 / 品牌映射）整体消失。
+
+### 修复
+
+- **设置 → 通用 中外观设置项消失**：根因是重构风格主题后端时，`injected()` 仍引用已不存在的裸变量 `setThemeId`，设置行注册时抛 `ReferenceError: setThemeId is not defined`，slot 崩溃导致整个外观项不渲染（头部主题切换不受影响）。
+- 顺带修正 tsc 检查发现的潜在类型错误：`ThemeDefinition` 从 `themes-list` 导入（原误从 `theme-settings` 导入）、`defaultEntry` 补 `desc` 字段、主题下拉移除未定义的 `desc` 渲染。
+
+---
+
+## 0.2.1 — 2026-08-16
+
+> **兼容干净 Harness（未打补丁的官方源码 / npm 发布的 rc.5）**：风格主题现在开箱即用。
+
+### 背景
+
+"风格主题"维度（`setThemeId` / `theme` 设置字段 / 主题注册表 / `body.theme-<id>` 切换）**并非 Harness 官方源码自带**——它是早期 v1 patch 方案给核心加的功能。因此插件在**干净源码 / npm rc.5** 上换主题会报 `runtime.setThemeId is not a function`（点击静默失败）。
+
+### 变更
+
+- 新增**风格主题后端**（`src/client/theme-backend.ts`），自动探测核心能力：
+  - **核心路径**：核心有 `setThemeId`（打过 v1 patch 或含该特性的 fork）→ 读写走核心，持久化到 `settings.yaml`，class 由核心 presenter 切换（原行为不变）；
+  - **插件路径**：核心没有 `setThemeId`（官方源码 / npm rc.5）→ 插件自管：主题 id 存 `localStorage`，自行切换 `body.theme-<id>` class（配合插件注入的主题 CSS），本地事件通知刷新选择器/网格；明暗切换仍走核心 preference。
+- 主题选择器、主题网格、浮动按钮在两种核心上都可用。
+- 设置了 localStorage 可用性兜底（隐私模式降级为会话内有效）与 boot 时恢复已存主题。
+
+### 修复
+
+- 干净 Harness 上切换主题无反应（`runtime.setThemeId is not a function`）。
+
+---
+
 ## 0.2.0 — 2026-08-16
 
 > 品牌自定义体系完善 + 新会话体验 + 稳定性修复。此版本起改为**标准 Cordis 插件**（`dsh plugin --profile web add` 安装），不再以 patch 方式修改 Harness 源码。

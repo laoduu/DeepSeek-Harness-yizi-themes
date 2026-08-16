@@ -164,7 +164,6 @@ function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
                 border: '1px solid var(--dsw-alias-border-l1)', flex: 'none',
               }} />
               <span style={{ flex: 1 }}>{t.name}</span>
-              <span style={{ fontSize: 11, color: 'var(--dsw-alias-label-caption)' }}>{t.desc}</span>
             </button>
           ))}
         </div>

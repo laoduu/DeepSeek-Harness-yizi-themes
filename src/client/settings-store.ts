@@ -6,7 +6,7 @@
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ThemePreference } from './theme-settings.ts'
 import type { CustomBrandConfig } from './theme-settings.ts'
-import type { ThemeDefinition } from './theme-settings.ts'
+import type { ThemeDefinition } from './themes-list.ts'
 
 /** Store state mirrored from the theme snapshot. */
 export interface AppearanceRowState {

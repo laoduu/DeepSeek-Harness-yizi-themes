@@ -24,6 +24,7 @@
 - 🎭 **19 个主题**：从极光流光到赛博朋克霓虹，从莫兰迪高级灰到故宫朱砂，总有一款配得上你的审美
 - 🌗 **双模式**：每个主题都有精心调配的亮色 / 深色两套 token，跟随系统自动切换
 - 🧩 **标准插件**：标准 Cordis 插件（`dsh plugin` 安装/卸载），不修改 Harness 仓库任何源码
+- ✅ **干净 Harness 开箱即用**：风格主题由插件自实现（含持久化与 `body.theme-<id>` 应用），官方源码 / npm 发布的 rc.5 无需打任何补丁
 - 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
 - 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
 - 🔤 **品牌映射**：输出时把提示词里的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词
@@ -65,10 +66,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.2.0.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.2.3.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.2.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.0/dsh-yizi-themes-0.2.0.tgz
+curl -L -o dsh-yizi-themes-0.2.3.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.3/dsh-yizi-themes-0.2.3.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -76,7 +77,7 @@ curl -L -o dsh-yizi-themes-0.2.0.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.0.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.3.tgz
 ```
 
 4. 重启：
@@ -187,7 +188,10 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 确认 Logo/品牌字样已设置且为 `currentColor` 或 `var(--dsw-alias-brand-primary)`；硬编码颜色不会跟随主题。
 
 **Q: 侧边栏折叠后重新展开空白？**
-老版本 bug，升级到 0.2.0+。
+老版本 bug，升级到 0.2.2+。
+
+**Q: 干净 Harness（官方源码 / npm 发布的 rc.5）能用吗？**
+可以。0.2.1+ 由插件自实现风格主题（持久化到 localStorage + 自行切换 `body.theme-<id>`），无需给核心打任何补丁；明暗切换仍走核心。若核心本身带风格主题 API（打过旧 patch 或含该特性的构建），则自动走核心路径（持久化到 settings.yaml）。
 
 **Q: 想让 agent 帮我装插件？**
 把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。

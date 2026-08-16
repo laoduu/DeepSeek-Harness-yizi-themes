@@ -16,3 +16,6 @@ Thumbs.db
 # Archives
 *.zip
 *.tgz
+
+# Local drafts not meant for the repo or the published package (e.g. Zhihu articles)
+drafts/

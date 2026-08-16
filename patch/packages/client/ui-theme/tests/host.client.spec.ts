@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import {
-  DEFAULT_PREFERENCE, DEFAULT_THEME, THEME_SETTINGS_NAMESPACE, apply,
+  DEFAULT_CUSTOM_BRAND, DEFAULT_PREFERENCE, DEFAULT_THEME, THEME_SETTINGS_NAMESPACE, apply,
 } from '@deepseek-ai/dsh-client-ui-theme'
+
+const FULL_DEFAULT = { preference: DEFAULT_PREFERENCE, theme: DEFAULT_THEME, customBrand: DEFAULT_CUSTOM_BRAND }
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
@@ -21,9 +23,9 @@ describe('ui-theme host', () => {
     const fiber = ctx.plugin({ apply })
     await fiber.await()
     const ns = settingsNamespace(THEME_SETTINGS_NAMESPACE)
-    expect(ctx.settings.get(ns)).toEqual({ preference: DEFAULT_PREFERENCE, theme: DEFAULT_THEME })
+    expect(ctx.settings.get(ns)).toEqual(FULL_DEFAULT)
     await ctx.settings.update(ns, { preference: 'dark', theme: 'aurora' })
-    expect(ctx.settings.get(ns)).toEqual({ preference: 'dark', theme: 'aurora' })
+    expect(ctx.settings.get(ns)).toEqual({ preference: 'dark', theme: 'aurora', customBrand: DEFAULT_CUSTOM_BRAND })
     await expect(ctx.settings.update(ns, { preference: 'sepia' })).rejects.toThrow()
     await fiber.dispose()
     expect(ctx.settings.describe().map(row => row.ns)).not.toContain(ns)

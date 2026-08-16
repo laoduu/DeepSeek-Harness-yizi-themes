@@ -1,6 +1,7 @@
 /* Appearance row (figma 'Frame 2117131228': title + cube row, column gap 8,
  * pad 16/0, hairline separator; the section column strips it when last).
- * Below the mode cubes sits the style-theme swatch grid. */
+ * Below the mode cubes sits the style-theme swatch grid and the custom-brand
+ * configuration block. */
 
 .group {
   display: flex;
@@ -56,14 +57,14 @@
 }
 
 /* Selected cube/card: brand-accent border so the active selection reads as the
-   theme's signature color. */
+ * theme's signature color. */
 .selected {
   background: var(--dsw-alias-bg-module-platform);
   border-color: var(--dsw-alias-brand-primary);
 }
 
 /* Style-theme swatch grid: two columns of compact cards, each with a
-   gradient swatch bar, a name, and an optional description. */
+ * gradient swatch bar, a name, and an optional description. */
 .themeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -110,7 +111,7 @@
 }
 
 /* Custom-brand configuration block: text inputs, previews, and brand-mapping
-   fields sitting below the theme grid. */
+ * fields sitting below the theme grid. */
 .customBlock {
   display: flex;
   flex-direction: column;
@@ -241,51 +242,4 @@
 
 .mappingLabel .input {
   font-size: 13px;
-}
-
-/* Style-theme swatch grid: two columns of compact cards, each with a
- * gradient swatch bar, a name, and an optional description. */
-.themeGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
-}
-
-.themeCard {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  padding: 8px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: transparent;
-  font: inherit;
-  color: var(--dsw-alias-label-primary);
-  cursor: pointer;
-  text-align: left;
-}
-
-.themeCard:hover:not(.selected) {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
-.swatch {
-  display: block;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border-l1);
-}
-
-.cardLabel {
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
-}
-
-.cardDesc {
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--dsw-alias-label-secondary);
 }

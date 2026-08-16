@@ -1,6 +1,8 @@
-/** Theme preferences stored in the Host user-settings document. */
-
-import z from '@deepseek-ai/schemastery'
+/**
+ * Client-half theme settings for the dsh-yizi-themes plugin.
+ * Pure types + defaults — the durable schema lives in the host config
+ * (`config.ts`); the browser half reads/writes through the settings transport.
+ */
 
 /** Built-in preferences accepted at the registry and settings boundaries. */
 export const THEME_PREFERENCES = ['light', 'dark', 'system'] as const
@@ -28,19 +30,18 @@ export const DEFAULT_PREFERENCE: ThemePreference = 'system'
 
 /** Custom brand display configuration. */
 export interface CustomBrandConfig {
-  /** Custom logo SVG markup (raw `<svg>…</svg>` or a data URI); empty uses the built-in fish. */
+  /** Custom logo SVG markup (raw `<svg>…</svg>` or a data URI); empty uses the built-in fish.
+   * Also used as the new-session hero icon. */
   logo: string
   /** Brand wordmark text (default "DEEPSEEK"). */
   wordmark: string
   /** Badge text riding the wordmark plate (default "HARNESS"). */
   wordmarkBadge: string
-  /** New-session hero icon markup (SVG, emoji, or data URI); empty uses the built-in fish. */
-  heroIcon: string
   /** New-session hero headline text (default "探索未至之境"). */
   headline: string
-  /** Brand-string replacement map injected into model-facing prompts. */
+  /** Brand-string replacement map injected into rendered output. */
   mappings: {
-    /** Enable brand-string replacement in prompts. */
+    /** Enable brand-string replacement. */
     enabled: boolean
     /** Replacement for "DeepSeek". */
     deepseek: string
@@ -58,7 +59,6 @@ export const DEFAULT_CUSTOM_BRAND: CustomBrandConfig = {
   logo: '',
   wordmark: 'DEEPSEEK',
   wordmarkBadge: 'HARNESS',
-  heroIcon: '',
   headline: '探索未至之境',
   mappings: {
     enabled: false,
@@ -78,26 +78,6 @@ export interface ThemeSettings {
   /** Custom brand display configuration. */
   customBrand: CustomBrandConfig
 }
-
-/** Durable theme schema; also the wire envelope the browser scope validates against. */
-export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
-  [THEME_PREFERENCE_FIELD]: z.union([...THEME_PREFERENCES]).default(DEFAULT_PREFERENCE),
-  [THEME_FIELD]: z.string().default(DEFAULT_THEME),
-  [CUSTOM_BRAND_FIELD]: z.object({
-    logo: z.string().default(DEFAULT_CUSTOM_BRAND.logo),
-    wordmark: z.string().default(DEFAULT_CUSTOM_BRAND.wordmark),
-    wordmarkBadge: z.string().default(DEFAULT_CUSTOM_BRAND.wordmarkBadge),
-    heroIcon: z.string().default(DEFAULT_CUSTOM_BRAND.heroIcon),
-    headline: z.string().default(DEFAULT_CUSTOM_BRAND.headline),
-    mappings: z.object({
-      enabled: z.boolean().default(DEFAULT_CUSTOM_BRAND.mappings.enabled),
-      deepseek: z.string().default(DEFAULT_CUSTOM_BRAND.mappings.deepseek),
-      deepseekChinese: z.string().default(DEFAULT_CUSTOM_BRAND.mappings.deepseekChinese),
-      harness: z.string().default(DEFAULT_CUSTOM_BRAND.mappings.harness),
-      deepseekHarness: z.string().default(DEFAULT_CUSTOM_BRAND.mappings.deepseekHarness),
-    }).default(DEFAULT_CUSTOM_BRAND.mappings),
-  }).default(DEFAULT_CUSTOM_BRAND),
-})
 
 /**
  * Narrow one wire or registry value to a persistable preference.

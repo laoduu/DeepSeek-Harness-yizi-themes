@@ -1,25 +1,22 @@
 /**
  * Appearance preference row registered into the General section item slot:
  * title + a mode cube row (light/dark/system) + a style-theme swatch grid +
- * a custom-brand configuration block. Registered by this package — the theme
- * feature owns its own settings surface. Selection follows the persisted
- * preference/theme/customBrand, never the resolved active theme.
+ * a custom-brand configuration block. Registered by this plugin with the same
+ * id as the core AppearanceRow so it replaces it while loaded.
  */
-import clsx from 'clsx'
 import {
   IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ThemePreference } from '../theme-settings.ts'
-import { DEFAULT_THEME } from '../theme-settings.ts'
-import type { CustomBrandConfig } from '../theme-settings.ts'
+import type { ThemePreference } from './theme-settings.ts'
+import { DEFAULT_THEME } from './theme-settings.ts'
+import type { CustomBrandConfig } from './theme-settings.ts'
 import type { ThemeKey } from './locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { createAppearanceRowStore } from './settings-store.ts'
-import type { ThemeDefinition } from './index.ts'
-import css from './AppearanceRow.module.css'
+import type { ThemeDefinition } from './theme-settings.ts'
 
-/** Injected business face: the preference/theme writes (t rides the standard locale seat). */
+/** Injected business face: the preference/theme/custom-brand writes. */
 export interface AppearanceRowInjected {
   /** Switch the theme preference. */
   setTheme: (id: ThemePreference) => void
@@ -32,9 +29,9 @@ export interface AppearanceRowInjected {
 /** Full component props: runtime share + store share + locale seat + injected face. */
 export type AppearanceRowComponentProps =
   PropsRuntime<'settings.general.item'> & PropsStore<ReturnType<typeof createAppearanceRowStore>>
-  & PropsLocale<'settings.theme'> & AppearanceRowInjected
+  & PropsLocale<'yizi.theme'> & AppearanceRowInjected
 
-/** Mode cube order and icons (figma 501:30015-30017: Light, Dark, System). */
+/** Mode cube order and icons. */
 const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof IconLightOutline16 }[] = [
   { id: 'light', labelKey: 'appearance.light', Icon: IconLightOutline16 },
   { id: 'dark', labelKey: 'appearance.dark', Icon: IconDarkOutline16 },
@@ -44,7 +41,7 @@ const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof Ic
 /** Swatch gradient fallback when a theme declares none. */
 const FALLBACK_SWATCH: [string, string] = ['#e8ecf0', '#c0c8d4']
 
-/** Built-in palette ids the mode cubes already cover; they never appear as style-theme cards. */
+/** Built-in palette ids the mode cubes already cover. */
 const PALETTE_IDS = new Set(['light', 'dark'])
 
 /** The implicit "no style theme" entry shown ahead of the registered grid. */
@@ -53,12 +50,17 @@ function defaultEntry(): ThemeDefinition {
     id: DEFAULT_THEME,
     colorScheme: 'light',
     tokens: {},
-    name: '', // name/desc come from locale keys below
+    name: '',
     swatch: FALLBACK_SWATCH,
   }
 }
 
-/** Render a live SVG/emoji preview, sanitizing raw markup. */
+/** Local clsx replacement — concatenates truthy string args with spaces. */
+function cx(...parts: Array<string | false | null | undefined>): string {
+  return parts.filter(Boolean).join(' ')
+}
+
+/** Render a live SVG/emoji preview. */
 function MarkupPreview({ markup, className }: { markup: string; className?: string }) {
   if (markup === '') return null
   const isDataUri = markup.startsWith('data:')
@@ -66,7 +68,6 @@ function MarkupPreview({ markup, className }: { markup: string; className?: stri
   if (isDataUri || isSvg) {
     return <span className={className} dangerouslySetInnerHTML={{ __html: markup }} />
   }
-  // Treat as emoji / text fallback.
   return <span className={className} aria-hidden="true">{markup}</span>
 }
 
@@ -89,14 +90,14 @@ export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStor
     setCustomBrand({ mappings: { ...customBrand.mappings, ...patch } })
   }
   return (
-    <div className={css.group}>
-      <div className={css.title}>{t('appearance.title')}</div>
-      <div className={css.cubeRow}>
+    <div className="dsw-yizi-group">
+      <div className="dsw-yizi-title">{t('appearance.title')}</div>
+      <div className="dsw-yizi-cube-row">
         {CUBES.map(({ id, labelKey, Icon }) => (
           <button
             key={id}
             type="button"
-            className={clsx(css.themeCube, preference === id && css.selected)}
+            className={cx('dsw-yizi-theme-cube', preference === id && 'dsw-yizi-selected')}
             aria-pressed={preference === id}
             onClick={() => { setTheme(id) }}
           >
@@ -107,8 +108,8 @@ export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStor
       </div>
       {entries.length > 1 && (
         <>
-          <div className={css.sectionTitle}>{t('appearance.themes')}</div>
-          <div className={css.themeGrid}>
+          <div className="dsw-yizi-section-title">{t('appearance.themes')}</div>
+          <div className="dsw-yizi-theme-grid">
             {entries.map((entry) => {
               const label = entry.id === DEFAULT_THEME
                 ? t('appearance.default')
@@ -121,140 +122,124 @@ export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStor
                 <button
                   key={entry.id}
                   type="button"
-                  className={clsx(css.themeCard, themeId === entry.id && css.selected)}
+                  className={cx('dsw-yizi-theme-card', themeId === entry.id && 'dsw-yizi-selected')}
                   aria-pressed={themeId === entry.id}
                   onClick={() => { setThemeId(entry.id) }}
                 >
                   <span
-                    className={css.swatch}
+                    className="dsw-yizi-swatch"
                     style={{ background: `linear-gradient(135deg, ${swatch[0]} 0%, ${swatch[1]} 100%)` }}
                     aria-hidden="true"
                   />
-                  <span className={css.cardLabel}>{label}</span>
-                  {desc !== '' && <span className={css.cardDesc}>{desc}</span>}
+                  <span className="dsw-yizi-card-label">{label}</span>
+                  {desc !== '' && <span className="dsw-yizi-card-desc">{desc}</span>}
                 </button>
               )
             })}
           </div>
         </>
       )}
-      <div className={css.sectionTitle}>{t('appearance.custom')}</div>
-      <div className={css.customBlock}>
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel} htmlFor="custom-logo">{t('appearance.custom.logo')}</label>
-          <div className={css.fieldInput}>
+      <div className="dsw-yizi-section-title">{t('appearance.custom')}</div>
+      <div className="dsw-yizi-custom-block">
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label" htmlFor="custom-logo">{t('appearance.custom.logo')}</label>
+          <div className="dsw-yizi-field-input">
             <textarea
               id="custom-logo"
-              className={css.textarea}
+              className="dsw-yizi-textarea"
               rows={3}
               value={customBrand.logo}
               placeholder={t('appearance.custom.logo.placeholder')}
               onChange={(e) => { update({ logo: e.target.value }) }}
             />
+            <p className="dsw-yizi-field-hint-subtle">{t('appearance.custom.logo.hint')}</p>
             {customBrand.logo !== '' && (
-              <div className={css.previewWrap}>
-                <span className={css.previewLabel}>{t('appearance.custom.logo.preview')}</span>
-                <MarkupPreview markup={customBrand.logo} className={css.logoPreview} />
+              <div className="dsw-yizi-preview-wrap">
+                <span className="dsw-yizi-preview-label">{t('appearance.custom.logo.preview')}</span>
+                <MarkupPreview markup={customBrand.logo} className="dsw-yizi-logo-preview" />
               </div>
             )}
           </div>
         </div>
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel} htmlFor="custom-wordmark">{t('appearance.custom.wordmark')}</label>
-          <div className={css.fieldInput}>
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label" htmlFor="custom-wordmark">{t('appearance.custom.wordmark')}</label>
+          <div className="dsw-yizi-field-input">
             <input
               id="custom-wordmark"
-              className={css.input}
+              className="dsw-yizi-input"
               value={customBrand.wordmark}
               placeholder={t('appearance.custom.wordmark.placeholder')}
               onChange={(e) => { update({ wordmark: e.target.value }) }}
             />
           </div>
         </div>
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel} htmlFor="custom-badge">{t('appearance.custom.badge')}</label>
-          <div className={css.fieldInput}>
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label" htmlFor="custom-badge">{t('appearance.custom.badge')}</label>
+          <div className="dsw-yizi-field-input">
             <input
               id="custom-badge"
-              className={css.input}
+              className="dsw-yizi-input"
               value={customBrand.wordmarkBadge}
               placeholder={t('appearance.custom.badge.placeholder')}
               onChange={(e) => { update({ wordmarkBadge: e.target.value }) }}
             />
           </div>
         </div>
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel} htmlFor="custom-hero">{t('appearance.custom.heroIcon')}</label>
-          <div className={css.fieldInput}>
-            <input
-              id="custom-hero"
-              className={css.input}
-              value={customBrand.heroIcon}
-              placeholder={t('appearance.custom.heroIcon.placeholder')}
-              onChange={(e) => { update({ heroIcon: e.target.value }) }}
-            />
-            {customBrand.heroIcon !== '' && (
-              <div className={css.previewWrap}>
-                <MarkupPreview markup={customBrand.heroIcon} className={css.heroPreview} />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel} htmlFor="custom-headline">{t('appearance.custom.headline')}</label>
-          <div className={css.fieldInput}>
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label" htmlFor="custom-headline">{t('appearance.custom.headline')}</label>
+          <div className="dsw-yizi-field-input">
             <input
               id="custom-headline"
-              className={css.input}
+              className="dsw-yizi-input"
               value={customBrand.headline}
               placeholder={t('appearance.custom.headline.placeholder')}
               onChange={(e) => { update({ headline: e.target.value }) }}
             />
           </div>
         </div>
-        <div className={css.divider} />
-        <div className={css.fieldRow}>
-          <label className={css.fieldLabel}>{t('appearance.custom.mappings')}</label>
-          <div className={css.fieldInput}>
-            <p className={css.fieldHint}>{t('appearance.custom.mappings.desc')}</p>
-            <label className={css.toggleRow}>
+        <div className="dsw-yizi-divider" />
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label">{t('appearance.custom.mappings')}</label>
+          <div className="dsw-yizi-field-input">
+            <p className="dsw-yizi-field-hint">{t('appearance.custom.mappings.desc')}</p>
+            <label className="dsw-yizi-toggle-row">
               <input
                 type="checkbox"
                 checked={customBrand.mappings.enabled}
-                onChange={(e) => { updateMappings({ enabled: e.target.value === 'on' }) }}
+                onChange={(e) => { updateMappings({ enabled: e.target.checked }) }}
               />
               <span>{t('appearance.custom.mappings.enabled')}</span>
             </label>
             {customBrand.mappings.enabled && (
-              <div className={css.mappingGrid}>
-                <label className={css.mappingLabel}>
+              <div className="dsw-yizi-mapping-grid">
+                <label className="dsw-yizi-mapping-label">
                   <span>{t('appearance.custom.mappings.deepseekHarness')}</span>
                   <input
-                    className={css.input}
+                    className="dsw-yizi-input"
                     value={customBrand.mappings.deepseekHarness}
                     onChange={(e) => { updateMappings({ deepseekHarness: e.target.value }) }}
                   />
                 </label>
-                <label className={css.mappingLabel}>
+                <label className="dsw-yizi-mapping-label">
                   <span>{t('appearance.custom.mappings.deepseek')}</span>
                   <input
-                    className={css.input}
+                    className="dsw-yizi-input"
                     value={customBrand.mappings.deepseek}
                     onChange={(e) => { updateMappings({ deepseek: e.target.value }) }}
                   />
                 </label>
-                <label className={css.mappingLabel}>
+                <label className="dsw-yizi-mapping-label">
                   <span>{t('appearance.custom.mappings.deepseekChinese')}</span>
                   <input
-                    className={css.input}
+                    className="dsw-yizi-input"
                     value={customBrand.mappings.deepseekChinese}
                     onChange={(e) => { updateMappings({ deepseekChinese: e.target.value }) }}
                   />
                 </label>
-                <label className={css.mappingLabel}>
+                <label className="dsw-yizi-mapping-label">
                   <span>{t('appearance.custom.mappings.harness')}</span>
                   <input
-                    className={css.input}
+                    className="dsw-yizi-input"
                     value={customBrand.mappings.harness}
                     onChange={(e) => { updateMappings({ harness: e.target.value }) }}
                   />
@@ -267,3 +252,5 @@ export function AppearanceRow({ t, setTheme, setThemeId, setCustomBrand, useStor
     </div>
   )
 }
+
+

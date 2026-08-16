@@ -30,8 +30,9 @@ import {
 export type { AppearanceRowComponentProps, AppearanceRowInjected } from './AppearanceRow.tsx'
 export type { AppearanceRowState } from './settings-store.ts'
 export type { ThemeKey } from './locales.ts'
-export type { ThemePreference, ThemeSettings } from '../theme-settings.ts'
-export { DEFAULT_THEME, THEME_FIELD } from '../theme-settings.ts'
+export type { CustomBrandConfig, ThemePreference, ThemeSettings } from '../theme-settings.ts'
+export { DEFAULT_CUSTOM_BRAND, DEFAULT_THEME, THEME_FIELD } from '../theme-settings.ts'
+export { applyBrandMappings } from '../theme-settings.ts'
 
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.theme'
@@ -99,6 +100,8 @@ export interface ThemeSnapshot {
   active: ThemeDefinition
   /** Registered themes in registration order (built-ins first). */
   themes: readonly ThemeDefinition[]
+  /** Persisted custom brand configuration. */
+  customBrand: CustomBrandConfig
   /** Monotonic change counter (registry or active changes). */
   revision: number
 }
@@ -267,6 +270,7 @@ export class ThemeRuntime {
   private themes: ThemeDefinition[] = [...BUILTIN_THEMES]
   private preference: ThemePreference
   private themeId: string = DEFAULT_THEME
+  private customBrand: CustomBrandConfig = DEFAULT_CUSTOM_BRAND
   private revision = 0
   private snapshot: ThemeSnapshot
   private readonly media: MediaQueryList | undefined
@@ -373,7 +377,35 @@ export class ThemeRuntime {
       this.themeId = theme
       changed = true
     }
+    const customBrand = section.customBrand ?? DEFAULT_CUSTOM_BRAND
+    if (!this.customBrandEquals(this.customBrand, customBrand)) {
+      this.customBrand = customBrand
+      changed = true
+    }
     if (changed) this.publish()
+  }
+
+  /** Structural compare of two custom brand configs (order-independent). */
+  private customBrandEquals(a: CustomBrandConfig, b: CustomBrandConfig): boolean {
+    return a.logo === b.logo && a.wordmark === b.wordmark && a.wordmarkBadge === b.wordmarkBadge
+      && a.heroIcon === b.heroIcon && a.headline === b.headline
+      && a.mappings.enabled === b.mappings.enabled && a.mappings.deepseek === b.mappings.deepseek
+      && a.mappings.deepseekChinese === b.mappings.deepseekChinese
+      && a.mappings.harness === b.mappings.harness && a.mappings.deepseekHarness === b.mappings.deepseekHarness
+  }
+
+  /**
+   * Switch the custom brand configuration — the third appearance dimension.
+   * @param patch - partial custom brand config to merge into the current one.
+   */
+  setCustomBrand(patch: Partial<CustomBrandConfig>): void {
+    this.customBrand = {
+      ...this.customBrand,
+      ...patch,
+      mappings: { ...this.customBrand.mappings, ...(patch.mappings ?? {}) },
+    }
+    void this.host.set(CUSTOM_BRAND_FIELD, this.customBrand)
+    this.publish()
   }
 
   /**
@@ -446,6 +478,7 @@ export class ThemeRuntime {
       theme: this.themeId,
       active: this.composeActive(active),
       themes: Object.freeze([...this.themes]),
+      customBrand: this.customBrand,
       revision: this.revision,
     })
   }
@@ -535,7 +568,7 @@ export function apply(ctx: ClientContext): void {
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
-    bound?.sync(snapshot.preference, snapshot.theme, snapshot.themes, snapshot.revision)
+    bound?.sync(snapshot.preference, snapshot.theme, snapshot.themes, snapshot.customBrand, snapshot.revision)
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {
@@ -546,6 +579,7 @@ export function apply(ctx: ClientContext): void {
     return {
       setTheme: (id) => { theme.setTheme(id) },
       setThemeId: (id) => { theme.setThemeId(id) },
+      setCustomBrand: (patch) => { theme.setCustomBrand(patch) },
     }
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({

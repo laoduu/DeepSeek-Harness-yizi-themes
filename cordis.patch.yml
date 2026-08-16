@@ -1,0 +1,16 @@
+# YiziThemes bundle patch: inserts the theme pack into the Web UI composition.
+# The plugin row references this package by name; the profile loader resolves
+# it from node_modules (installed via `dsh plugin --profile <name> add`).
+- insert:
+    - id: yizi-themes
+      name: dsh-yizi-themes
+      config:
+        # Default brand values; users can override these in their cordis.patch.yml.
+        wordmark: 'DEEPSEEK'
+        wordmarkBadge: 'HARNESS'
+        headline: '探索未至之境'
+        mappingEnabled: false
+        mappingDeepSeek: 'DeepSeek'
+        mappingDeepSeekChinese: '深度求索'
+        mappingHarness: 'Harness'
+        mappingDeepSeekHarness: 'DeepSeek Harness'

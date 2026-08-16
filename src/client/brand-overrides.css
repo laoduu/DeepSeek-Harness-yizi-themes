@@ -1,0 +1,47 @@
+/**
+ * Brand-accent overrides for core Harness components.
+ * Injected by the plugin so the DeepSeek wordmark, the new-session hero fish
+ * + headline, the running-status shimmer, and the trajectory accents all follow
+ * the active theme's --dsw-alias-brand-primary instead of the static blue.
+ */
+
+/* SidebarRoot: expanded wordmark + collapsed rail fish. */
+.dsw-yizi-theme-enabled .sidebar .brand { color: var(--dsw-alias-brand-primary); }
+.dsw-yizi-theme-enabled .sidebar .collapsed .iconButton { color: var(--dsw-alias-brand-primary); }
+
+/* HeroShell: fish + headline text. */
+.dsw-yizi-theme-enabled .hero .headline { color: var(--dsw-alias-brand-primary); }
+.dsw-yizi-theme-enabled .hero .fish { color: var(--dsw-alias-brand-primary); }
+
+/* ChatView: running-status shimmer uses the brand gradient. */
+.dsw-yizi-theme-enabled .turnStatus {
+  background: linear-gradient(
+    90deg,
+    var(--dsw-alias-brand-primary) 0%,
+    var(--dsw-alias-brand-primary) 40%,
+    color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent) 50%,
+    var(--dsw-alias-brand-primary) 60%,
+    var(--dsw-alias-brand-primary) 100%
+  );
+  background-position: 100% 0;
+  background-size: 250% 100%;
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* StateDot: ongoing state. */
+.dsw-yizi-theme-enabled .dot,
+.dsw-yizi-theme-enabled .matrix { --dsh-state-ongoing: var(--dsw-alias-brand-primary); }
+
+/* ContextMeter: messages lane. */
+.dsw-yizi-theme-enabled .colorMessages { --meter-tint: var(--dsw-alias-brand-primary); }
+
+/* TrajectoryTable: turn accent. */
+.dsw-yizi-theme-enabled .table {
+  --trajectory-turn-accent: color-mix(in srgb, var(--dsw-alias-brand-primary) 22%, var(--dsw-alias-bg-layer-1));
+}
+.dsw-yizi-theme-enabled .turnLabelActive {
+  color: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-label-tertiary));
+}

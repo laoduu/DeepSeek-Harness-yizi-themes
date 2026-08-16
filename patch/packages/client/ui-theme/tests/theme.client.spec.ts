@@ -8,6 +8,7 @@ import type {
   ThemeTokenOverrides,
 } from '@deepseek-ai/dsh-client-ui-theme/client'
 import { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
+import { DEFAULT_CUSTOM_BRAND } from '../src/theme-settings.ts'
 
 const make = (host = stubSettingsScope<ThemeSettings>()): {
   ctx: Context
@@ -80,18 +81,18 @@ describe('ThemeRuntime', () => {
 
   it('adopts a published Host section without writing it back', () => {
     const { theme, events, host } = make()
-    host.publish({ status: 'ready', value: { preference: 'dark', theme: 'morandi' }, revision: 1, writable: true })
+    host.publish({ status: 'ready', value: { preference: 'dark', theme: 'morandi', customBrand: DEFAULT_CUSTOM_BRAND }, revision: 1, writable: true })
     expect(theme.getTheme().preference).toBe('dark')
     expect(theme.getTheme().theme).toBe('morandi')
     expect(events).toHaveLength(1)
     expect(host.set).not.toHaveBeenCalled()
-    host.publish({ value: { preference: 'dark', theme: 'morandi' }, revision: 2 })
+    host.publish({ value: { preference: 'dark', theme: 'morandi', customBrand: DEFAULT_CUSTOM_BRAND }, revision: 2 })
     expect(events).toHaveLength(1)
   })
 
   it('adopts a section already standing at construction', () => {
     const host = stubSettingsScope<ThemeSettings>()
-    host.publish({ status: 'ready', value: { preference: 'dark', theme: 'tech' }, revision: 1, writable: true })
+    host.publish({ status: 'ready', value: { preference: 'dark', theme: 'tech', customBrand: DEFAULT_CUSTOM_BRAND }, revision: 1, writable: true })
     const { theme } = make(host)
     expect(theme.getTheme().preference).toBe('dark')
     expect(theme.getTheme().theme).toBe('tech')

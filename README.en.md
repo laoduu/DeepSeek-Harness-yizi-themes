@@ -1,6 +1,6 @@
 # 🎨 DeepSeek Harness Yizi Themes
 
-**19 premium style themes for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web UI**
+**19 premium style themes + custom branding for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web UI**
 
 A faithful port of the [YiziMarkdown](https://github.com/laoduu/YiziMarkdown) design language,
 tailored for Harness's `--dsw-alias-*` semantic token system.
@@ -9,16 +9,21 @@ tailored for Harness's `--dsw-alias-*` semantic token system.
 
 Every theme ships both **light / dark** palettes and follows your "Light / Dark / System" setting.
 
+A standard **Cordis plugin**: install with `dsh plugin` — no Harness source changes.
+
+[中文](README.md) · [Installation](#-installation) · [Custom branding](#-custom-branding) · [Changelog](CHANGELOG.md) · [Dev log](docs/DEVLOG.md) · [Agent install guide](docs/AGENT-SKILL.md)
+
 ---
 
 ## ✨ Highlights
 
 - 🎭 **19 themes**: from flowing auroras to cyberpunk neon, from Morandi greys to Forbidden-City vermilion
 - 🌗 **Dual mode**: every theme has hand-tuned light/dark token pairs, auto-switching with your system
-- 🧩 **First-class integration**: not a skin overlay — a native citizen of Harness's theme system, persisted to `settings.yaml`
+- 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
-- 🖌️ **Token-level theming**: all themes are built on `--dsw-alias-*` variables; change one variable, restyle the world
-- 📦 **One-command install**: cross-platform installers that auto-locate, back up, verify, and copy
+- 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
+- 🔤 **Prompt mapping**: replace "DeepSeek / 深度求索 / Harness" in prompts at output time
+- 📍 **Controls everywhere**: theme picker + mode toggle in the session header, and floating controls on blank new sessions
 
 ---
 
@@ -26,124 +31,154 @@ Every theme ships both **light / dark** palettes and follows your "Light / Dark 
 
 ![DeepSeek Harness Yizi Themes screenshot](assets/dsh-yizi-themes.png)
 
+| Theme | Light base | Dark base | Design language |
+|---|---|---|---|
+| **Academic** `academic` | pale blue `#f5f8ff` | deep navy `#0d1117` | #002FA7 deep blue, professional |
+| **Aurora** `aurora` | ice blue `#f0f5fa` | deep ink `#0a0e1a` | flowing northern lights |
+| **Cyberpunk** `cyberpunk` | cold white `#f0f4f8` | deep black `#050508` | neon cyan/pink, futuristic |
+| **Facebook** `facebook` | grey-white `#f0f2f5` | dark grey `#18191a` | #1877F2 brand blue, social card |
+| **Liquid Glass** `liquidglass` | crystal white `#f6f9fe` | deep indigo `#0c1222` | translucent glass |
+| **Lychee** `lychee` | pale pink-white `#fff5f5` | dark red `#171212` | #E63946 warm red |
+| **Magazine** `magazine` | warm paper `#faf8f5` | deep brown `#1a1612` | coffee-brown serif reading |
+| **Matrix** `matrix` | white `#f5faf5` | pure black `#000000` | matrix-green terminal |
+| **Minimal** `minimal` | pure white `#ffffff` | dark grey `#1a1a1a` | clean and raw |
+| **Mint** `mint` | creamy `#f5fbf8` | deep green `#0a1a14` | #10B981 refreshing mint |
+| **Morandi** `morandi` | beige `#f7f3ef` | dark brown `#2c2926` | low-saturation premium grey |
+| **Nature** `nature` | rice paper `#f5f2eb` | deep green `#1a1f1a` | paper forest green |
+| **Palace** `palace` | rice paper `#faf6f0` | deep ink `#201812` | vermilion + gold |
+| **Sunset** `sunset` | warm white `#fef8f0` | deep purple `#0d0812` | amber twilight |
+| **Tech** `tech` | cool blue-white `#f0f4f8` | GitHub dark `#0d1117` | classic dev-tools |
+| **Typewriter** `typewriter` | aged paper `#f5f0e8` | dark grey `#1a1a18` | sepia study |
+| **Vaporwave** `vaporwave` | pale pink-purple `#f8f0f6` | deep purple `#140a1e` | pink-purple neon retro-future |
+| **Vibrant** `vibrant` | warm orange-white `#fff8f2` | dark brown `#1a1410` | #F3641E vivid |
+| **Violet** `violet` | pale purple-white `#faf5fe` | deep purple `#16101f` | #7209B7 elegant |
+
 ---
 
 ## 📦 Installation
 
-> **Prerequisite**: a working DeepSeek Harness checkout (i.e. you can run `pnpm dsh web`).
-> If you don't have one yet:
->
-> ```bash
-> git clone https://github.com/deepseek-ai/deepseek-harness.git
-> cd deepseek-harness
-> pnpm install
-> ```
+> **Prerequisite**: a DeepSeek Harness checkout that can run `pnpm dsh web` (including its profile).
 
-### Option 1: One-command installer (recommended)
+### Option 1: Download the tgz from GitHub Releases (recommended)
 
-Clone or download this repo (ideally next to your `deepseek-harness` checkout), then run:
-
-**Windows (PowerShell):**
-
-```powershell
-powershell -ExecutionPolicy Bypass -File install.ps1
-```
-
-**macOS / Linux / WSL:**
+1. Download `dsh-yizi-themes-<version>.tgz` from this repo's **Releases**;
+2. Stop the running `dsh web` (Ctrl+C);
+3. Install:
 
 ```bash
-bash install.sh
+cd <your deepseek-harness path>
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-<version>.tgz
 ```
 
-The script will:
-1. Locate the `deepseek-harness` checkout (pass a path if auto-detection fails, e.g. `bash install.sh ~/deepseek-harness`);
-2. Verify the repo version and **automatically back up** files it will replace (to `.dsh-yizi-themes-backup/`);
-3. Copy the 19 theme stylesheets and related source.
+4. Restart:
 
-### Option 2: Manual install
+```bash
+pnpm dsh web
+```
 
-Merge `patch/` into the Harness checkout by path:
+### Option 2: Build from source
 
-| Source (this repo `patch/`) | Destination (Harness checkout) |
+```bash
+git clone https://github.com/laoduu/DeepSeek-Harness-yizi-themes.git
+cd DeepSeek-Harness-yizi-themes
+
+node prepare.mjs    # prepare.mjs resolves tsdown from the Harness checkout
+npm pack            # produces dsh-yizi-themes-<version>.tgz
+```
+
+Then follow Option 1 steps 2–4.
+
+### ⚠️ Updating an existing install (same-version trap)
+
+Re-`add` of a tarball with the **same version** does nothing (pnpm says `Already up to date`).
+
+- Version **changed**: a plain `add` works.
+- Version **unchanged**: remove first, then add:
+
+```bash
+pnpm dsh plugin --profile web remove dsh-yizi-themes
+pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
+```
+
+### Usage
+
+- **Switch theme / mode**: the palette button + light/dark toggle at the top right of the session header; on a blank new session they appear as floating controls in the same spot.
+- **Custom branding**: Settings → Appearance → Custom (below).
+
+---
+
+## 🖌️ Custom Branding
+
+Settings → Appearance → **Custom**:
+
+| Field | Description |
 |---|---|
-| `patch/packages/client/ui-theme/**` | `packages/client/ui-theme/` |
-| `patch/packages/client/ui-layout/**` | `packages/client/ui-layout/` |
-| `patch/packages/client/web/src/base.css` | `packages/client/web/src/base.css` |
-| `patch/packages/extensions/cordis-client-runner/**` | `packages/extensions/cordis-client-runner/` |
-| `patch/scripts/gen-cordis-inspect-catalog.ts` | `scripts/gen-cordis-inspect-catalog.ts` |
+| **Logo SVG** | Paste SVG markup or a data URI. Used for the **top-left brand, the collapsed sidebar icon, and the new-session page icon**. Leave empty for the built-in whale mark |
+| **Wordmark** | Top-left brand text (default `DEEPSEEK`, 18px) |
+| **Badge** | Small badge next to the wordmark (default `HARNESS`) |
+| **Headline** | New-session page headline (default `探索未至之境`) |
+| **Brand mappings** | Toggle + mapping table replacing "DeepSeek Harness / DeepSeek / 深度求索 / Harness" at output time |
 
-### Rebuild after install
+**Colors follow the theme automatically**: wordmark, badge background, and the logo container all use
+`--dsw-alias-brand-primary`, so they change with any style theme and light/dark mode.
 
-```bash
-cd <your deepseek-harness path>
+> **Want your own SVG to follow the theme too?** Replace hardcoded colors in the SVG with:
+> - `fill="var(--dsw-alias-brand-primary)"` — follows theme and light/dark automatically;
+> - `fill="currentColor"` — inherits the container color (already set to the theme color).
+>
+> Other tokens: primary text `--dsw-alias-label-primary`, secondary `--dsw-alias-label-secondary` /
+> `--dsw-alias-label-caption`, inverted text `--dsw-alias-label-primary-inverted`,
+> background `--dsw-alias-bg-layer-1`, border `--dsw-alias-border-l1`, etc.
 
-# First install only
-pnpm install
-
-# Rebuild the frontend (about 1-3 minutes)
-pnpm run build
-
-# Start the Web UI
-pnpm dsh web
-```
-
-Open the printed URL (default `http://127.0.0.1:3080`), go to **Settings → Appearance**,
-and click any theme card. Your selection is saved automatically.
+**Persistence**: all branding lives in `$DSH_HOME/settings.yaml` under `ui-theme.customBrand`,
+alongside the theme preference — survives restarts.
 
 ---
 
-## 🛠️ Custom themes
+## ⚙️ Configuration (cordis.patch.yml)
 
-Each theme's palette lives in `patch/packages/client/ui-theme/src/styles/themes/<name>.css`:
+Default plugin-row config (overridable in the profile's `cordis.patch.yml`):
 
-```css
-body.theme-aurora {
-  --dsw-alias-bg-base: #f0f5fa;        /* app background */
-  --dsw-alias-label-primary: #1a2a3a;  /* primary text */
-  --dsw-alias-brand-primary: #4a90d9;  /* brand accent */
-  /* ... */
-}
-body.theme-aurora[data-ds-dark-theme] { /* dark variant */ }
-```
+| Field | Default | Description |
+|---|---|---|
+| `wordmark` | `DEEPSEEK` | Brand wordmark |
+| `wordmarkBadge` | `HARNESS` | Badge text |
+| `headline` | `探索未至之境` | New-session headline |
+| `mappingEnabled` | `false` | Enable brand-string replacement |
+| `mappingDeepSeek` / `mappingDeepSeekChinese` / `mappingHarness` / `mappingDeepSeekHarness` | original | Replacement targets |
 
-**Adding your own theme?**
-
-1. Copy any theme CSS to `<name>.css` and rewrite the `--dsw-alias-*` variables;
-2. Add an entry to the `BUILTIN_THEMES` array in `packages/client/ui-theme/src/client/index.ts` (id / name / swatch / desc);
-3. Add the matching `@import` in `packages/client/web/src/base.css`;
-4. Re-run `pnpm run build` — your theme card appears in the Appearance settings automatically.
-
-The full token catalog lives in Harness's [`design-platform.css`](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/ui-theme/src/styles/design-platform.css).
+Settings-page edits take precedence over this config (config seeds the base layer; the user layer overrides it).
 
 ---
 
-## 🗑️ Uninstall / rollback
-
-The installer backs up replaced files in `<Harness checkout>/.dsh-yizi-themes-backup/`:
+## 🗑️ Uninstall
 
 ```bash
 cd <your deepseek-harness path>
-cp -r .dsh-yizi-themes-backup/* packages/ scripts/
-rm -rf packages/client/ui-theme/src/styles/themes
-pnpm run build
-pnpm dsh web
+pnpm dsh plugin --profile web remove dsh-yizi-themes
 ```
+
+Restart `dsh web` to restore the default appearance. `ui-theme.customBrand` belongs to the core
+namespace and remains after uninstall (harmless; remove manually if you like).
 
 ---
 
 ## ❓ FAQ
 
-**Q: Nothing changed after install?**
-Re-run `pnpm run build` and fully restart `dsh web`. Hard-refresh the browser (Ctrl+Shift+R).
+**Q: Nothing changed after updating?**
+If the version did not change you must `remove → add` (see above), fully restart `dsh web` (Ctrl+C), and hard-refresh the browser (Ctrl+Shift+R).
 
-**Q: Build errors?**
-Ensure Node.js ≥ 22; run `pnpm install` first; if an older theme pack was installed, roll back first (see above).
+**Q: Settings accept input but are lost after refresh?**
+Check whether `$DSH_HOME/settings.yaml` gained a `ui-theme.customBrand` section. If not, open F12 → Network and look for `settings.mutate` returning `settings-not-exposed` (write refused). The plugin writes through the core `ui-theme` namespace (the api-proxy allowlist) — do not switch to a custom namespace.
 
-**Q: Version mismatch warning?**
-The script compares the checkout version against the target (`0.1.0-rc.5`). After Harness updates, file layout may differ — proceed with caution or wait for an updated release.
+**Q: Top-left brand color does not follow the theme?**
+Make sure the logo/wordmark is set and uses `currentColor` or `var(--dsw-alias-brand-primary)`; hardcoded colors never adapt.
 
-**Q: Only want a few themes?**
-Delete the unwanted CSS files under `patch/.../themes/` and prune the `BUILTIN_THEMES` array before installing.
+**Q: Blank sidebar after collapse/expand?**
+Old bug — upgrade to 0.2.0+.
+
+**Q: Want an agent to install it for you?**
+Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.
 
 ---
 
@@ -151,9 +186,17 @@ Delete the unwanted CSS files under `patch/.../themes/` and prune the `BUILTIN_T
 
 Pull requests welcome:
 
-- **New themes**: follow the custom-theme guide, with light/dark token pairs and a gradient swatch;
+- **New themes**: see the [dev log](docs/DEVLOG.md) and `scripts/gen-themes.mjs` (CSS → TS generator);
 - **Bug fixes**: adaptations for newer Harness versions;
 - **Docs**: installation guide and FAQ improvements.
+
+---
+
+## 📄 Docs
+
+- [Changelog](CHANGELOG.md)
+- [Development log](docs/DEVLOG.md)
+- [Agent install guide](docs/AGENT-SKILL.md)
 
 ---
 
@@ -163,3 +206,6 @@ Pull requests welcome:
 
 This project is a third-party [`dsh-plugin`](https://github.com/topics/dsh-plugin) that brings 19 YiziMarkdown themes to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness);
 the theme design language is ported from [YiziMarkdown](https://github.com/laoduu/YiziMarkdown).
+
+> The legacy `install.sh` / `install.ps1` / `MANIFEST.json` / `patch/` files belong to the earlier
+> "overwrite Harness source" approach — deprecated, kept for reference only. Do not use them.

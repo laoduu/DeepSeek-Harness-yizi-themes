@@ -2,7 +2,7 @@
 
 # 🎨 DeepSeek Harness Yizi Themes
 
-**19 个精品风格主题 for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web UI**
+**19 个精品风格主题 + 自定义品牌 for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web UI**
 
 完整移植自 [YiziMarkdown](https://github.com/laoduu/YiziMarkdown) 的设计语言，
 为 Harness 的 `--dsw-alias-*` 语义 token 体系量身定制。
@@ -11,7 +11,9 @@
 
 每个主题都同时支持 **亮色 / 深色** 两套配色，并跟随你的「浅色 / 深色 / 跟随系统」设置。
 
-[English](README.en.md) · [安装教程](#-安装教程) · [主题预览](#-主题预览) · [自定义主题](#-自定义主题)
+标准 **Cordis 插件**：`dsh plugin` 一键安装，不改动 Harness 源码。
+
+[English](README.en.md) · [安装教程](#-安装教程) · [自定义品牌](#-自定义品牌) · [版本日志](CHANGELOG.md) · [开发日志](docs/DEVLOG.md) · [Agent 安装指引](docs/AGENT-SKILL.md)
 
 </div>
 
@@ -21,10 +23,11 @@
 
 - 🎭 **19 个主题**：从极光流光到赛博朋克霓虹，从莫兰迪高级灰到故宫朱砂，总有一款配得上你的审美
 - 🌗 **双模式**：每个主题都有精心调配的亮色 / 深色两套 token，跟随系统自动切换
-- 🧩 **原生融入**：不是皮肤覆盖，而是 Harness 主题系统的一等公民 —— 选择持久化到 `settings.yaml`，重启不丢失
-- 🎚️ **正交双维度**：明暗模式（浅色/深色/跟随系统）与风格主题完全独立，可自由组合
-- 🖌️ **token 级定制**：所有主题基于 `--dsw-alias-*` 语义变量，改一个变量即可全局换肤
-- 📦 **一键安装**：跨平台安装脚本，自动备份、复制、校验，无需手工改文件
+- 🧩 **标准插件**：标准 Cordis 插件（`dsh plugin` 安装/卸载），不修改 Harness 仓库任何源码
+- 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
+- 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
+- 🔤 **品牌映射**：输出时把提示词里的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词
+- 📍 **随处可切换**：会话头部右上角 + 新会话（无对话）时的浮动按钮
 
 ---
 
@@ -58,122 +61,131 @@
 
 ## 📦 安装教程
 
-> **前置条件**：你需要一个能运行的 DeepSeek Harness 仓库（即能执行 `pnpm dsh web`）。
-> 如果还没有，先：
->
-> ```bash
-> git clone https://github.com/deepseek-ai/deepseek-harness.git
-> cd deepseek-harness
-> pnpm install
-> ```
+> **前置条件**：一个能运行 `pnpm dsh web` 的 DeepSeek Harness 仓库（含 profile）。
 
-### 方式一：一键安装（推荐）
+### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-将本仓库克隆或下载到本地（建议与 `deepseek-harness` 仓库同级），然后运行安装脚本：
-
-**Windows（PowerShell）：**
-
-```powershell
-powershell -ExecutionPolicy Bypass -File install.ps1
-```
-
-**macOS / Linux / WSL：**
+1. 从本仓库的 **Releases** 下载 `dsh-yizi-themes-<version>.tgz`；
+2. 停掉正在运行的 `dsh web`（Ctrl+C）；
+3. 安装：
 
 ```bash
-bash install.sh
+cd <你的 deepseek-harness 路径>
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-<version>.tgz
 ```
 
-脚本会自动：
-1. 在常见位置查找 `deepseek-harness` 仓库（找不到时可用参数指定路径，如 `bash install.sh ~/deepseek-harness`）；
-2. 校验仓库版本并**自动备份**将被覆盖的文件（到 `.dsh-yizi-themes-backup/`）；
-3. 复制 19 个主题样式与相关源码。
+4. 重启：
 
-### 方式二：手动安装
+```bash
+pnpm dsh web
+```
 
-将 `patch/` 下的文件按路径合并到 Harness 仓库：
+### 方式二：从源码构建
 
-| 来源（本仓库 `patch/` 下） | 目标（Harness 仓库） |
+```bash
+# 克隆插件源码
+git clone https://github.com/laoduu/DeepSeek-Harness-yizi-themes.git
+cd DeepSeek-Harness-yizi-themes
+
+# 构建并打包（prepare.mjs 从 Harness 仓库的 node_modules 解析 tsdown）
+node prepare.mjs
+npm pack          # 产出 dsh-yizi-themes-<version>.tgz
+```
+
+然后按方式一的 2-4 步安装、重启。
+
+### ⚠️ 更新已有安装（同版本陷阱）
+
+**同版本 tgz 内容变了，直接 `add` 不会更新**（pnpm 报 `Already up to date`）。
+
+- 版本号**变了**：直接 `add` 即可；
+- 版本号**没变**：必须先卸载再安装：
+
+```bash
+pnpm dsh plugin --profile web remove dsh-yizi-themes
+pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
+```
+
+### 使用
+
+- **切换主题 / 明暗**：右上角调色板按钮 + 明暗切换按钮（会话头部）；新会话（无对话内容）时以浮动按钮显示在同一位置；
+- **自定义品牌**：设置 → 外观 → 自定义（见下节）。
+
+---
+
+## 🖌️ 自定义品牌
+
+设置 → 外观 → **自定义** 板块：
+
+| 设置项 | 说明 |
 |---|---|
-| `patch/packages/client/ui-theme/**` | `packages/client/ui-theme/` |
-| `patch/packages/client/ui-layout/**` | `packages/client/ui-layout/` |
-| `patch/packages/client/web/src/base.css` | `packages/client/web/src/base.css` |
-| `patch/packages/extensions/cordis-client-runner/**` | `packages/extensions/cordis-client-runner/` |
-| `patch/scripts/gen-cordis-inspect-catalog.ts` | `scripts/gen-cordis-inspect-catalog.ts` |
+| **Logo SVG** | 粘贴 SVG 代码或 data URI。用于**左上角品牌、收起侧边栏图标、新会话页图标**三处。留空用内置鲸鱼标 |
+| **品牌字样** | 左上角品牌文字（默认 `DEEPSEEK`，18px） |
+| **徽章字样** | 品牌文字旁的徽章标签（默认 `HARNESS`） |
+| **新会话标题** | 新会话页标题文案（默认 `探索未至之境`） |
+| **品牌映射** | 开关 + 映射表：输出时替换提示词里的 "DeepSeek Harness / DeepSeek / 深度求索 / Harness" |
 
-### 安装后构建
+**颜色自动跟随主题**：品牌字样、徽章背景、Logo 容器颜色统一使用 `--dsw-alias-brand-primary`，
+切换任意风格主题或明暗模式时自动变化。
 
-无论哪种方式，最后都要**重新构建**：
+> **想让自己的 SVG 也跟随主题？** 把 SVG 里的硬编码颜色替换为：
+> - `fill="var(--dsw-alias-brand-primary)"` —— 随主题与明暗自动切换；
+> - `fill="currentColor"` —— 继承容器颜色（容器已设为主题色）。
+>
+> 其他可用变量：主文字 `--dsw-alias-label-primary`、次要文字 `--dsw-alias-label-secondary` /
+> `--dsw-alias-label-caption`、反色文字 `--dsw-alias-label-primary-inverted`、
+> 背景 `--dsw-alias-bg-layer-1`、边框 `--dsw-alias-border-l1` 等。
 
-```bash
-cd <你的 deepseek-harness 路径>
-
-# 首次安装才需要
-pnpm install
-
-# 重新构建前端（约 1-3 分钟）
-pnpm run build
-
-# 启动 Web UI
-pnpm dsh web
-```
-
-打开终端打印的地址（默认 `http://127.0.0.1:3080`），进入 **设置 → 外观**，
-点击任意主题色卡即可切换，选择会自动保存。
+**持久化**：所有品牌设置保存在 `$DSH_HOME/settings.yaml` 的 `ui-theme.customBrand` 分节，
+与主题偏好一起持久化，重启不丢失。
 
 ---
 
-## 🛠️ 自定义主题
+## ⚙️ 配置（cordis.patch.yml）
 
-每个主题的配色都在 `patch/packages/client/ui-theme/src/styles/themes/<名字>.css`：
+插件行的默认配置（可在 profile 的 `cordis.patch.yml` 里覆盖）：
 
-```css
-body.theme-aurora {
-  --dsw-alias-bg-base: #f0f5fa;        /* 应用底色 */
-  --dsw-alias-label-primary: #1a2a3a;  /* 主文字 */
-  --dsw-alias-brand-primary: #4a90d9;  /* 品牌强调色 */
-  /* ... */
-}
-body.theme-aurora[data-ds-dark-theme] { /* 深色变体 */ }
-```
+| 字段 | 默认值 | 说明 |
+|---|---|---|
+| `wordmark` | `DEEPSEEK` | 品牌字样 |
+| `wordmarkBadge` | `HARNESS` | 徽章字样 |
+| `headline` | `探索未至之境` | 新会话标题 |
+| `mappingEnabled` | `false` | 是否启用品牌映射 |
+| `mappingDeepSeek` / `mappingDeepSeekChinese` / `mappingHarness` / `mappingDeepSeekHarness` | 原文 | 各品牌词的替换目标 |
 
-**想新增一个自己的主题？**
-
-1. 复制任意一个主题 CSS 为 `<名字>.css`，改写里面的 `--dsw-alias-*` 变量；
-2. 在 `packages/client/ui-theme/src/client/index.ts` 的 `BUILTIN_THEMES` 数组加一条定义（id / name / swatch 色卡 / desc）；
-3. 在 `packages/client/web/src/base.css` 加上对应的 `@import`；
-4. 重新 `pnpm run build` 即可，外观设置里会自动出现你的主题卡片。
-
-完整的 token 目录见 Harness 的 [`design-platform.css`](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/ui-theme/src/styles/design-platform.css)。
+设置页的修改优先级高于此配置（配置作为 base 层，用户层覆盖之）。
 
 ---
 
-## 🗑️ 卸载 / 回滚
-
-安装脚本把原始文件备份在 `<Harness仓库>/.dsh-yizi-themes-backup/`，恢复：
+## 🗑️ 卸载
 
 ```bash
 cd <你的 deepseek-harness 路径>
-cp -r .dsh-yizi-themes-backup/* packages/ scripts/   # Windows: Copy-Item -Recurse -Force
-rm -rf packages/client/ui-theme/src/styles/themes     # 删除新增主题 CSS
-pnpm run build
-pnpm dsh web
+pnpm dsh plugin --profile web remove dsh-yizi-themes
 ```
+
+重启 `dsh web` 即恢复默认外观。`settings.yaml` 里的 `ui-theme.customBrand` 属于核心命名空间，
+卸载后仍保留（无副作用，可手工删除）。
 
 ---
 
 ## ❓ 常见问题
 
-**Q: 安装后界面没有变化？**
-重新执行 `pnpm run build` 并完全重启 `dsh web`（Ctrl+C 后重启）。浏览器强刷 Ctrl+Shift+R。
+**Q: 更新后界面没变化？**
+版本号没变则必须 `remove → add`（见上）；并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
 
-**Q: 构建报错？**
-确保 Node.js ≥ 22；先执行 `pnpm install`；如果之前装过旧版，先按「卸载/回滚」恢复再重装。
+**Q: 设置能输入但刷新后丢失？**
+检查 `$DSH_HOME/settings.yaml` 是否出现 `ui-theme.customBrand`。若没有，看浏览器 F12 → Network →
+`settings.mutate` 是否返回 `settings-not-exposed`（说明写入被拒）。插件数据走核心 `ui-theme` 命名空间（api-proxy 白名单），不要改成自定义命名空间。
 
-**Q: 版本不匹配警告？**
-脚本对比 Harness 仓库版本与目标版本（`0.1.0-rc.5`）。Harness 更新后文件结构可能变化，可按提示继续（一般兼容），或等待本仓库发布适配版本。
+**Q: 切换主题后左上角品牌颜色不变？**
+确认 Logo/品牌字样已设置且为 `currentColor` 或 `var(--dsw-alias-brand-primary)`；硬编码颜色不会跟随主题。
 
-**Q: 只想要其中几个主题？**
-删掉 `patch/.../themes/` 下不想要的 CSS，并编辑 `BUILTIN_THEMES` 数组后安装。
+**Q: 侧边栏折叠后重新展开空白？**
+老版本 bug，升级到 0.2.0+。
+
+**Q: 想让 agent 帮我装插件？**
+把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。
 
 ---
 
@@ -181,9 +193,17 @@ pnpm dsh web
 
 欢迎提交 Pull Request：
 
-- **新主题**：按照「自定义主题」章节的规范，附上亮/暗双套 token 与一张渐变色卡；
+- **新主题**：见 [开发日志](docs/DEVLOG.md) 与 `scripts/gen-themes.mjs`（CSS → TS 生成器）；
 - **Bug 修复**：Harness 版本更新导致的适配问题；
 - **文档改进**：安装教程、常见问题。
+
+---
+
+## 📄 文档
+
+- [版本日志](CHANGELOG.md)
+- [开发日志](docs/DEVLOG.md)
+- [Agent 安装指引](docs/AGENT-SKILL.md)
 
 ---
 
@@ -193,6 +213,9 @@ pnpm dsh web
 
 本项目是对 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（MIT）的第三方主题扩展；
 主题设计语言移植自 [YiziMarkdown](https://github.com/laoduu/YiziMarkdown)。
+
+> 旧版 `install.sh` / `install.ps1` / `MANIFEST.json` / `patch/` 为早期"源码覆盖"方案遗留，
+> 已废弃，仅保留作参考，请勿使用。
 
 ---
 

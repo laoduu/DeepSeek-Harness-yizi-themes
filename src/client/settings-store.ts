@@ -4,9 +4,9 @@
  * reads via props.useStore.
  */
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ThemePreference } from '../theme-settings.ts'
-import type { CustomBrandConfig } from '../theme-settings.ts'
-import type { ThemeDefinition } from './index.ts'
+import type { ThemePreference } from './theme-settings.ts'
+import type { CustomBrandConfig } from './theme-settings.ts'
+import type { ThemeDefinition } from './theme-settings.ts'
 
 /** Store state mirrored from the theme snapshot. */
 export interface AppearanceRowState {
@@ -39,7 +39,7 @@ export function createAppearanceRowStore(): EngineStoreHandle<AppearanceRowState
       themes: [],
       customBrand: {
         logo: '', wordmark: 'DEEPSEEK', wordmarkBadge: 'HARNESS',
-        heroIcon: '', headline: '探索未至之境',
+        headline: '探索未至之境',
         mappings: {
           enabled: false, deepseek: 'DeepSeek', deepseekChinese: '深度求索',
           harness: 'Harness', deepseekHarness: 'DeepSeek Harness',

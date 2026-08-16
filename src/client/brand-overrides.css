@@ -1,21 +1,25 @@
 /**
  * Brand-accent overrides for core Harness components.
- * Injected by the plugin so the DeepSeek wordmark, the new-session hero fish
- * + headline, the running-status shimmer, and the trajectory accents all follow
- * the active theme's --dsw-alias-brand-primary instead of the static blue.
+ *
+ * Injected by the plugin so brand elements follow the ACTIVE theme's
+ * `--dsw-alias-brand-primary` (theme + light/dark adaptive) instead of the
+ * static blue / ink. The core's own CSS-module class names are hashed per
+ * build, so every rule here anchors on STABLE DOM hooks (data attributes,
+ * roles, SVG viewBox fingerprints) that survive any build:
+ *
+ *  - running status shimmer  → the `[role="status"]` inside `[data-chat-flow=""]`
+ *  - state dot (ongoing)     → `[data-state="ongoing"]`
+ *  - hero fish + headline    → the fish's `viewBox` + its sibling span
+ *  - sidebar wordmark / rail → the brand SVG `viewBox` inside the button
+ *
+ * ContextMeter (`--meter-tint`) and TrajectoryTable accents have no stable
+ * non-hashed hook and are intentionally not overridden here.
  */
 
-/* SidebarRoot: expanded wordmark + collapsed rail fish. */
-.dsw-yizi-theme-enabled .sidebar .brand { color: var(--dsw-alias-brand-primary); }
-.dsw-yizi-theme-enabled .sidebar .collapsed .iconButton { color: var(--dsw-alias-brand-primary); }
-
-/* HeroShell: fish + headline text. */
-.dsw-yizi-theme-enabled .hero .headline { color: var(--dsw-alias-brand-primary); }
-.dsw-yizi-theme-enabled .hero .fish { color: var(--dsw-alias-brand-primary); }
-
-/* ChatView: running-status shimmer uses the brand gradient. */
-.dsw-yizi-theme-enabled .turnStatus {
-  background: linear-gradient(
+/* ChatView running-status ("Deep diving...") shimmer follows the brand color.
+   Only overrides the gradient image; position/size/clip come from the app. */
+[data-chat-flow=""] [role="status"][aria-live="polite"] {
+  background-image: linear-gradient(
     90deg,
     var(--dsw-alias-brand-primary) 0%,
     var(--dsw-alias-brand-primary) 40%,
@@ -23,25 +27,26 @@
     var(--dsw-alias-brand-primary) 60%,
     var(--dsw-alias-brand-primary) 100%
   );
-  background-position: 100% 0;
-  background-size: 250% 100%;
-  background-clip: text;
-  color: transparent;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
-/* StateDot: ongoing state. */
-.dsw-yizi-theme-enabled .dot,
-.dsw-yizi-theme-enabled .matrix { --dsh-state-ongoing: var(--dsw-alias-brand-primary); }
-
-/* ContextMeter: messages lane. */
-.dsw-yizi-theme-enabled .colorMessages { --meter-tint: var(--dsw-alias-brand-primary); }
-
-/* TrajectoryTable: turn accent. */
-.dsw-yizi-theme-enabled .table {
-  --trajectory-turn-accent: color-mix(in srgb, var(--dsw-alias-brand-primary) 22%, var(--dsw-alias-bg-layer-1));
+/* StateDot ongoing chase rides the brand accent. */
+[data-state="ongoing"] {
+  --dsh-state-ongoing: var(--dsw-alias-brand-primary);
 }
-.dsw-yizi-theme-enabled .turnLabelActive {
-  color: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-label-tertiary));
+
+/* HeroShell: the fish hitbox (currentColor rides this) + the headline text
+   that follows it. */
+span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) {
+  color: var(--dsw-alias-brand-primary);
+}
+span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) + span {
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* SidebarRoot: expanded wordmark button + collapsed rail toggle (fish mark). */
+button:has(> svg[viewBox="0 0 182 24"]) {
+  color: var(--dsw-alias-brand-primary);
+}
+button:has(> svg[viewBox="0 0 23.16 17.04"][width="24"]) {
+  color: var(--dsw-alias-brand-primary);
 }

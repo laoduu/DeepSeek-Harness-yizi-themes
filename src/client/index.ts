@@ -72,7 +72,17 @@ function replaceBrandInNode(root: ParentNode, mappings: CustomBrandConfig['mappi
   ]
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null)
   const textNodes: Text[] = []
-  while (walker.nextNode()) textNodes.push(walker.currentNode as Text)
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    // NEVER rewrite text the user is typing: anything inside an input,
+    // textarea, or contenteditable (the composer, settings fields) is left
+    // exactly as authored.
+    const parent = node.parentElement
+    if (parent !== null && parent.closest('input, textarea, [contenteditable="true"], [contenteditable=""]')) {
+      continue
+    }
+    textNodes.push(node)
+  }
   for (const node of textNodes) {
     let text = node.textContent ?? ''
     let changed = false

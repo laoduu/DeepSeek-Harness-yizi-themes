@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-08-16 · v0.2.4：品牌色真正跟随 + 品牌映射按下
+
+### 品牌色覆盖表为什么一直没生效
+
+- 用户反馈"Deep diving…"执行状态没跟随主题色。排查发现：注入的 `brand-overrides.css` 用的选择器是 **CSS-Module 字面类名**（`.turnStatus`、`.dsw-yizi-theme-enabled` 前缀等），但应用内类名是构建哈希的（如 `Md3f7G_turnStatus`），且 `dsw-yizi-theme-enabled` 这个启用类**从来没有任何代码添加**——整份表在干净 Harness 上是死代码。
+- 机器 1 之所以"生效"，是因为其核心 CSS Module 被早期 patch 直接改过（工作区残留）。
+- **教训**：插件注入的 CSS 必须锚定**稳定 DOM 钩子**（data 属性 / role / SVG viewBox 指纹），不能依赖哈希类名。
+- 重写后选择器：`[data-chat-flow=""] [role="status"][aria-live="polite"]`（执行状态）、`[data-state="ongoing"]`（状态点）、`span:has(> svg[viewBox…][width=34])`（hero 鱼标+标题）、`button:has(> svg[viewBox="0 0 182 24"])`（侧边栏品牌）、`button:has(> svg[…][width=24])`（收起 rail）。
+
+### 品牌映射功能按下（默认禁用）
+
+- 用户反馈：开启映射后整个界面（设置面板标签、输入框）的 DeepSeek 相关词全被替换，打字都会被改写——这不是功能初衷。
+- 反思结论：**基于关键词的全局替换在任何作用域都站不住**——UI 文案是固定说明、输入是用户真实内容、提示词不能骗模型、输出替换会误导用户（问 DeepSeek 答出来的却是别的品牌）。
+- 处理：默认禁用（默认值本就是 false），并加**可编辑元素保护**（永不改写 input/textarea/contenteditable 内的文本）；待明确语义后再另行设计。
+
+---
+
 ## 2026-08-16 · v0.2.1–v0.2.3：兼容干净 Harness
 
 ### 真相澄清：风格主题本就不在官方源码里

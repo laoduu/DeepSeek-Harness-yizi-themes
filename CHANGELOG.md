@@ -1,5 +1,27 @@
 # 版本日志 / Changelog
 
+## 0.2.4 — 2026-08-16
+
+> 品牌色跟随修复 + 品牌映射默认禁用（含输入保护）。
+
+### 修复：品牌色跟随（执行状态等）
+
+- **背景**：插件注入的 brand-overrides.css 原本用 CSS-Module 字面类名（`.turnStatus`、`.dsw-yizi-theme-enabled` 前缀等），但应用内类名是构建哈希的、且启用类从未被添加——**整份覆盖表在干净 Harness 上完全无效**（机器 1 能生效是因为其核心源码被直接改过，属工作区残留）。已按稳定 DOM 钩子重写（data 属性 / role / SVG viewBox 指纹），任意构建都能命中。
+- **执行状态 shimmer（"Deep diving…"）**：`[data-chat-flow=""] [role="status"][aria-live="polite"]` 背景渐变改用 `--dsw-alias-brand-primary`，随主题与明暗自动变；
+- **状态点（ongoing）**：`[data-state="ongoing"]` 的 `--dsh-state-ongoing` 改用主题色；
+- **新会话 hero**：鱼标与标题文案改主题色（`span:has(> svg[viewBox…][width=34])` + 相邻 span）；
+- **侧边栏品牌 / 收起 rail**：`button:has(> svg[viewBox="0 0 182 24"])` 与 `button:has(> svg[…][width="24"])` 改主题色。
+- 移除全部失效的 `.dsw-yizi-theme-enabled` 规则；ContextMeter / TrajectoryTable 因无稳定非哈希钩子，暂不覆盖（注释说明）。
+- 验证：jsdom 按真实组件 DOM 形状验证 9 项选择器匹配全部通过（含 `:has` 结构与宽度区分）。
+
+### 变更：品牌映射默认禁用 + 输入保护
+
+- **品牌映射默认禁用**：`mappingEnabled` / `customBrand.mappings.enabled` 默认值保持 `false`，关闭时不做任何替换（设置面板、输入框、界面文案均不受影响）。
+- **可编辑元素保护**：即使开启映射，替换也跳过 `input` / `textarea` / `contenteditable` 内的文本——用户输入的内容原样保留，不会被自动改写。
+- 说明：品牌映射是基于关键词的全局替换，语义上无法区分"产品自称"与"用户讨论 DeepSeek 本尊"等场景，存在误导风险；故默认关闭，待明确语义后另行设计。
+
+---
+
 ## 0.2.3 — 2026-08-16
 
 > 设置面板去重：不再重复原生"浅色/深色/跟随系统"模式块。

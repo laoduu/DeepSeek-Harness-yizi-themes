@@ -23,7 +23,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no patch needed on official source or the npm-published rc.5
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
-- 🔤 **Prompt mapping**: replace "DeepSeek / 深度求索 / Harness" in prompts at output time
+- 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
 - 📍 **Controls everywhere**: theme picker + mode toggle in the session header, and floating controls on blank new sessions
 
 ---
@@ -123,7 +123,7 @@ Settings → Appearance → **Custom**:
 | **Wordmark** | Top-left brand text (default `DEEPSEEK`, 18px) |
 | **Badge** | Small badge next to the wordmark (default `HARNESS`) |
 | **Headline** | New-session page headline (default `探索未至之境`) |
-| **Brand mappings** | Toggle + mapping table replacing "DeepSeek Harness / DeepSeek / 深度求索 / Harness" at output time |
+| **Brand mappings** | Toggle (off by default, experimental) + mapping table replacing "DeepSeek Harness / DeepSeek / 深度求索 / Harness" in the UI/output; never rewrites input fields |
 
 **Colors follow the theme automatically**: wordmark, badge background, and the logo container all use
 `--dsw-alias-brand-primary`, so they change with any style theme and light/dark mode.

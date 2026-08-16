@@ -27,8 +27,17 @@
 git clone https://github.com/laoduu/DeepSeek-Harness-yizi-themes.git "$PLUGIN"
 ```
 
-**方式 B：直接下载发布包 tgz**（若 GitHub Releases 提供）
-下载 `dsh-yizi-themes-<version>.tgz` 到本地即可，跳过第 2 步构建。
+**方式 B：直接下载发布包 tgz（推荐，跳过构建）**
+
+当前版本 **v0.2.0** 的准确下载地址：
+
+```bash
+curl -L -o dsh-yizi-themes-0.2.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.2.0/dsh-yizi-themes-0.2.0.tgz
+```
+
+下载到本地即可，跳过第 2 步构建。新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases)
+获取对应 `<version>` 的 tgz，URL 格式固定为：
+`https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v<version>/dsh-yizi-themes-<version>.tgz`
 
 ---
 

@@ -76,6 +76,10 @@ cd <your deepseek-harness path>
 pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.2.4.tgz
 ```
 
+> 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
+> and the web profile are separate profiles (`$DSH_HOME/profiles/<desktop|web>`),
+> plugin installs do not cross over.
+
 4. Restart:
 
 ```bash

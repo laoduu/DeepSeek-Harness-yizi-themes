@@ -13,8 +13,28 @@ import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
 // Resolve tsdown from the Harness checkout (not a dependency of this package).
+// Try in order: $DSH_HARNESS (explicit), the original dev-machine path the
+// plugin was authored against, the sibling checkout on this machine, then any
+// path found by walking up from the cwd. Fail loudly with guidance.
+import { existsSync } from 'node:fs'
 const require = createRequire(import.meta.url)
-const { build } = require(resolve('C:/Users/Administrator/deepseek-harness/node_modules/tsdown/dist/index.mjs'))
+const tsdownCandidates = [
+  process.env.DSH_HARNESS,
+  'C:/Users/Administrator/deepseek-harness',
+  'E:/mycode/deepseek-harness',
+].filter(Boolean).map((base) => `${base.replace(/[\\/]+$/, '')}/node_modules/tsdown/dist/index.mjs`)
+let tsdownEntry
+for (const candidate of tsdownCandidates) {
+  if (existsSync(candidate)) { tsdownEntry = candidate; break }
+}
+if (tsdownEntry === undefined) {
+  console.error(
+    'dsh-yizi-themes: could not locate tsdown. Point $DSH_HARNESS at your DeepSeek Harness checkout,\n' +
+    'or add its node_modules/tsdown/dist/index.mjs to the candidate list in prepare.mjs.',
+  )
+  process.exit(1)
+}
+const { build } = require(tsdownEntry)
 
 const root = dirname(fileURLToPath(import.meta.url))
 const dist = resolve(root, 'dist')

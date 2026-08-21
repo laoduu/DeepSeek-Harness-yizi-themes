@@ -1,33 +1,45 @@
 /**
- * Apply the persisted custom brand to the DOM.
+ * Apply the persisted custom brand.
  *
- * React-safety rule: NEVER replace, move, or remove a React-managed node —
- * React's fibers keep references to the originals, and removing one out from
- * under React makes its next commit throw (NotFoundError on removeChild),
- * blanking the sidebar. Instead each target is handled as:
- *  1. hide the ORIGINAL node with inline `display:none` (these components
- *     never pass a style prop, so React never touches the style back);
- *  2. insert OUR node as a sibling right after the original (React ignores
- *     nodes it did not create; our node leaves with the subtree on unmount);
- *  3. orphan cleanup: if the original is gone but our sibling remains,
- *     remove OUR node; a fresh original mount re-applies.
- * A per-target signature makes content refresh cheap and idempotent.
+ * Two render paths, selected automatically:
  *
- * Targets (located by stable SVG viewBox attributes, since the app's
- * CSS-module class names are hashed):
- *  - expanded sidebar brand: BrandWordmark (`viewBox="0 0 182 24"`) →
- *    logo + wordmark + badge cluster;
- *  - collapsed rail: FishLogo (`viewBox="0 0 23.16 17.04"` width=24) → logo;
- *  - new-session hero: FishLogo width=34 → the custom logo, headline → custom.
+ * 1. MODERN (Harness rc.8+, the official extension surface). The shell composes
+ *    deployment branding through slots — `sidebar.brand.mark`,
+ *    `sidebar.brand.name` and `conversation.hero.brand.mark`. The plugin
+ *    registers those slots (see brand-slots.tsx) and renders the custom brand
+ *    reactively. No DOM surgery: the React tree is the source of truth and
+ *    survives any Harness upgrade that keeps the slot contract.
+ *
+ * 2. LEGACY (cores without the brand slots, e.g. the npm-published rc.5).
+ *    DOM fingerprint surgery on stable SVG viewBox attributes, kept here so
+ *    older builds keep working. React-safety rule: NEVER replace, move, or
+ *    remove a React-managed node — React's fibers keep references to the
+ *    originals, and removing one out from under React makes its next commit
+ *    throw (NotFoundError on removeChild), blanking the sidebar. Instead each
+ *    target is handled as:
+ *     1. hide the ORIGINAL node with inline `display:none` (these components
+ *        never pass a style prop, so React never touches the style back);
+ *     2. insert OUR node as a sibling right after the original (React ignores
+ *        nodes it did not create; our node leaves with the subtree on unmount);
+ *     3. orphan cleanup: if the original is gone but our sibling remains,
+ *        remove OUR node; a fresh original mount re-applies.
+ *
+ * Only the new-session HEADLINE has no slot on either path (the hero text is
+ * `t('hero.headline')` with no seat), so the headline is always applied as a
+ * single text write through the DOM — the one piece of brand DOM surgery that
+ * survives on every build. On the modern path the headline is located by OUR
+ * OWN `[data-yizi-hero-mark]` anchor (never core internals); on the legacy
+ * path it is located by the fish viewBox.
  */
 import { DEFAULT_CUSTOM_BRAND, type CustomBrandConfig } from './theme-settings.ts'
+import { isModernBrandPath } from './brand-store.ts'
 
-/** Stable SVG fingerprints of the built-in brand nodes. */
+/** Stable SVG fingerprints of the built-in brand nodes (legacy path). */
 const ART_SELECTOR = 'svg[viewBox="0 0 182 24"]'
 const RAIL_SELECTOR = 'svg[viewBox="0 0 23.16 17.04"][width="24"]'
 const HERO_SELECTOR = 'svg[viewBox="0 0 23.16 17.04"][width="34"]'
 
-/** Markers on OUR replacement nodes. */
+/** Markers on OUR replacement nodes (legacy path). */
 const ART_MARK = 'data-yizi-brand'
 const RAIL_MARK = 'data-yizi-rail'
 const HERO_MARK = 'data-yizi-hero'
@@ -66,7 +78,7 @@ function renderMarkup(markup: string, height: number): HTMLElement {
   return el
 }
 
-/** The sidebar brand cluster: logo + wordmark + badge. */
+/** The sidebar brand cluster: logo + wordmark + badge (legacy path). */
 function buildCluster(custom: CustomBrandConfig): HTMLElement {
   const cluster = document.createElement('span')
   cluster.setAttribute(ART_MARK, '1')
@@ -110,7 +122,7 @@ function setHidden(node: Element | null, hidden: boolean): void {
   ;(node as HTMLElement).style.display = hidden ? 'none' : ''
 }
 
-/** Expanded sidebar brand: replace the wordmark art with logo+wordmark+badge. */
+/** Expanded sidebar brand: replace the wordmark art with logo+wordmark+badge (legacy). */
 function applySidebarBrand(custom: CustomBrandConfig): void {
   const d = DEFAULT_CUSTOM_BRAND
   const customized = custom.logo !== d.logo
@@ -138,7 +150,7 @@ function applySidebarBrand(custom: CustomBrandConfig): void {
   else art.insertAdjacentElement('afterend', cluster)
 }
 
-/** Collapsed-rail fish → custom logo. */
+/** Collapsed-rail fish → custom logo (legacy). */
 function applyRailBrand(custom: CustomBrandConfig): void {
   const d = DEFAULT_CUSTOM_BRAND
   const fish = document.querySelector(RAIL_SELECTOR)
@@ -164,35 +176,71 @@ function applyRailBrand(custom: CustomBrandConfig): void {
   else fish.insertAdjacentElement('afterend', repl)
 }
 
-/** New-session hero: fish → the custom logo (same SVG as the sidebar brand),
- * headline text → custom headline. */
-function applyHeroBrand(custom: CustomBrandConfig): void {
+/** New-session hero: fish → the custom logo (legacy). Headline handled below. */
+function applyHeroBrandIcon(custom: CustomBrandConfig): void {
   const d = DEFAULT_CUSTOM_BRAND
   const fish = document.querySelector(HERO_SELECTOR)
   const mine = document.querySelector(`[${HERO_MARK}="1"]`)
-
-  // Icon (reuses the logo setting)
   if (custom.logo === d.logo) {
     mine?.remove()
     setHidden(fish, false)
     lastHero = ''
-  } else if (fish) {
-    setHidden(fish, true)
-    if (custom.logo !== lastHero || mine === null) {
-      lastHero = custom.logo
-      const repl = renderMarkup(custom.logo, 26)
-      repl.style.color = 'var(--dsw-alias-brand-primary)'
-      repl.setAttribute(HERO_MARK, '1')
-      if (mine !== null) mine.replaceWith(repl)
-      else fish.insertAdjacentElement('afterend', repl)
-    }
+    return
   }
+  if (!fish) {
+    mine?.remove()
+    lastHero = ''
+    return
+  }
+  setHidden(fish, true)
+  if (custom.logo !== lastHero || mine === null) {
+    lastHero = custom.logo
+    const repl = renderMarkup(custom.logo, 26)
+    repl.style.color = 'var(--dsw-alias-brand-primary)'
+    repl.setAttribute(HERO_MARK, '1')
+    if (mine !== null) mine.replaceWith(repl)
+    else fish.insertAdjacentElement('afterend', repl)
+  }
+}
 
-  // Headline text — the span right after the fish hitbox. The original span
-  // stays in place (React-managed text is overwritten safely); re-apply
-  // whenever the text no longer matches the desired value.
+/**
+ * Locate the new-session hero headline span.
+ *
+ * Modern path: OUR slot-rendered hero mark (`[data-yizi-hero-mark]`) is the
+ * anchor — it sits inside the slot anchor div (display:contents) which sits
+ * inside the hero's fish-hitbox span, and the headline is that span's next
+ * sibling. Anchoring on our own element (not core internals) is what keeps
+ * this stable across Harness upgrades.
+ *
+ * Legacy path: the core fish SVG (viewBox fingerprint) anchors the same chain.
+ */
+function locateHeroHeadline(): HTMLElement | null {
+  const mine = document.querySelector('[data-yizi-hero-mark="1"]')
+  if (mine !== null) {
+    // my wrapper -> slot anchor div (display:contents) -> fish hitbox span.
+    const anchor = mine.parentElement
+    const hitbox = anchor?.parentElement
+    const sibling = hitbox?.nextElementSibling
+    if (sibling instanceof HTMLElement && (sibling.textContent ?? '').trim() !== '') return sibling
+    // Structural safety: scan upward for the first element with a text sibling.
+    let node: Element | null = mine
+    for (let i = 0; i < 4 && node !== null; i++) {
+      const sib = node.nextElementSibling
+      if (sib instanceof HTMLElement && (sib.textContent ?? '').trim() !== '') return sib
+      node = node.parentElement
+    }
+    return null
+  }
+  const fish = document.querySelector(HERO_SELECTOR)
   const hitbox = fish?.parentElement
-  const text = hitbox?.nextElementSibling as HTMLElement | null
+  const sibling = hitbox?.nextElementSibling
+  return sibling instanceof HTMLElement ? sibling : null
+}
+
+/** Apply the hero headline text (the one brand piece with no slot on any path). */
+function applyHeroHeadline(custom: CustomBrandConfig): void {
+  const d = DEFAULT_CUSTOM_BRAND
+  const text = locateHeroHeadline()
   if (!text) return
   if (custom.headline !== d.headline) {
     if (text.textContent !== custom.headline) {
@@ -205,9 +253,31 @@ function applyHeroBrand(custom: CustomBrandConfig): void {
   }
 }
 
+/**
+ * Remove every artifact the LEGACY DOM path inserted and restore the originals
+ * it hid — called when the modern slot path takes over, so the slot-rendered
+ * brand is the single source of truth (no duplicate logos).
+ */
+export function cleanupLegacyBrandDom(): void {
+  document.querySelectorAll(`[${ART_MARK}="1"], [${RAIL_MARK}="1"], [${HERO_MARK}="1"]`)
+    .forEach((node) => node.remove())
+  document.querySelectorAll(`${ART_SELECTOR}, ${RAIL_SELECTOR}, ${HERO_SELECTOR}`)
+    .forEach((node) => { (node as HTMLElement).style.display = '' })
+  lastSidebar = ''
+  lastRail = ''
+  lastHero = ''
+  savedHeadline = null
+}
+
 /** Apply every brand element for the current config (restores when reset). */
 export function applyBrand(custom: CustomBrandConfig): void {
+  if (isModernBrandPath()) {
+    // The slots render the marks and the name; only the headline needs DOM.
+    applyHeroHeadline(custom)
+    return
+  }
   applySidebarBrand(custom)
   applyRailBrand(custom)
-  applyHeroBrand(custom)
+  applyHeroBrandIcon(custom)
+  applyHeroHeadline(custom)
 }

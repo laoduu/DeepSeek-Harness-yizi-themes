@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-08-21 · v0.3.0：适配 rc.8 品牌槽位（升级免疫）
+
+### rc.8 把侧边栏品牌从"单个 SVG"改成了"槽位组合"
+
+- rc.5 侧边栏品牌 = 一个 `BrandWordmark` SVG（`viewBox="0 0 182 24"`，内含鱼形 + "DEEPSEEK" 字样路径 + "HARNESS" 徽章底板）。插件旧版用该 viewBox 指纹定位并注入自定义字样/徽章，靠 MutationObserver 反复应用。
+- rc.8 重构为：`button.brand > span.brandIdentity > (span.brandMark [槽 `sidebar.brand.mark`，fallback FishLogo 24] + span.brandName [槽 `sidebar.brand.name`，fallback "DSH Local Build" + commit])`；rail 也是 `span.railMark [槽 `sidebar.brand.mark`]`；hero 则是 `span.fishHitbox [槽 `conversation.hero.brand.mark`，fallback FishLogo 34]` + `span.headlineText`。
+- 结论：`182 24` SVG 从侧边栏消失 → 旧版"左上角字样/徽章"定位失效；hero 鱼标 viewBox 仍在 → 自定义 logo 能显示，但整块 DOM 注入在新结构下与槽位渲染冲突，欢迎语也随之失效。
+
+### 方案：注册官方品牌槽位（升级免疫）
+
+- **为什么选槽位**：`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark` 是 Harness 为"部署品牌"设计的扩展面（`ui-brand-official` 在 official 构建里正是这么干的）。注册它们 = 官方支持的定制方式，不依赖内部 DOM/哈希类名，**升级只要保留槽位契约就继续工作**。
+- **响应式**：新增 `brand-store`（`useSyncExternalStore` 数据源），设置面板改 Logo/字样/徽章时槽位组件实时重渲染。
+- **单一槽位必须"占位"**：读 `scoped-slots.tsx` 发现 single 槽位注册后即使返回 null 也不会 fallback 到 shell 的 fallback——所以 mark 槽位在未设 logo 时自行渲染 `FishLogo`（保持默认观感），name 槽位始终渲染 "DEEPSEEK + HARNESS"（恢复 rc.5 的官方观感，rc.8 标准构建默认是 "DSH Local Build" 占位）。
+- **hero 欢迎语没有槽位**：`t('hero.headline')` 是 locale 字符串，且 `locale.register` 对已占用的 conversation 命名空间会抛 "already has locale"，无法覆盖。保留 DOM 文本写入，但定位锚点改成**我们自己渲染的 `[data-yizi-hero-mark]`**（其父的 slot 锚点 div → fishHitbox span → nextElementSibling = 标题），不再依赖核心鱼标 viewBox。
+- **旧版兜底 + 启动竞态**：无槽位的 rc.5 仍走原 viewBox 注入；槽位激活时 `markModernBrandPath()` 后立即 `cleanupLegacyBrandDom()`（清掉竞态期间产生的旧注入产物，避免重复 logo）。
+- **FloatingControls 联动**：新会话浮动按钮的 hero 检测从"鱼标 viewBox"改为同时认 `[data-yizi-hero-mark]`。
+
+### 构建
+
+- `prepare.mjs` 原来硬编码 `C:/Users/Administrator/deepseek-harness/node_modules/tsdown/...`（原作者机器路径），本机为 `E:/mycode/deepseek-harness` → 改为按 `$DSH_HARNESS` → 已知检出路径查找，找不到报错并给指引。
+
+---
+
 ## 2026-08-16 · v0.2.4：品牌色真正跟随 + 品牌映射按下
 
 ### 品牌色覆盖表为什么一直没生效

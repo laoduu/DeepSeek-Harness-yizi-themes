@@ -1,5 +1,33 @@
 # 版本日志 / Changelog
 
+## 0.3.0 — 2026-08-21
+
+> 适配 Harness v0.1.0-rc.8：品牌改用官方 brand 槽位渲染（升级免疫），修复左上角程序名 / 徽章 / 新会话欢迎语自定义失效。
+
+### 背景：rc.8 的侧边栏品牌不再使用旧 DOM
+
+- rc.5 侧边栏品牌是单个 `BrandWordmark`（`viewBox="0 0 182 24"`，内含鱼形 + "DEEPSEEK" 字样 + "HARNESS" 徽章底板）。插件旧版用 viewBox 指纹定位该 SVG 并注入自定义字样/徽章。
+- rc.8 把品牌改为**槽位组合**：`sidebar.brand.mark`（展开与收起共用的 logo 槽）+ `sidebar.brand.name`（展开的字样槽）；旧 `182 24` SVG 不再出现在侧边栏，故「左上角程序名 / 徽章」定位失效。新会话欢迎语（hero 标题）本应仍能命中，但因旧版整块 DOM 注入在新结构下与槽位渲染冲突，一并重写。
+
+### 修复（现代路径 = 官方扩展面，升级免疫）
+
+- **改用官方 brand 槽位**：插件注册 `sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark` 三个槽位，分别渲染自定义 Logo、字样+徽章、新会话 hero 鱼标。槽位是 Harness 为"部署品牌"设计的稳定扩展点，不依赖内部 DOM / 哈希类名，**后续 Harness 升级只要保留槽位契约即可继续工作**。
+- **响应式**：新增 `brand-store`（`useSyncExternalStore` 数据源），设置面板改 Logo/字样/徽章时，侧边栏与 hero 立即实时更新。
+- **hero 欢迎语**：仍用 DOM 文本写入（该文案无槽位），但定位锚点改为**插件自己渲染的 `[data-yizi-hero-mark]` 元素**（不再依赖核心鱼标 viewBox），结构更稳。
+- **未自定义时的默认观感**：名称槽始终渲染 "DEEPSEEK + HARNESS"（插件默认品牌，恢复 rc.5 侧边栏的官方观感；rc.8 标准构建默认是 "DSH Local Build" 占位）。
+- **浮动控件**（新会话页右上角）检测 hero 改用 `[data-yizi-hero-mark]`，与槽位渲染的 logo 兼容。
+- **旧版兜底**：无品牌槽位的核心（如 npm 发布的 rc.5）仍走原有 viewBox DOM 注入路径（`applyBrand` 按 `isModernBrandPath()` 自动分流）；槽位激活时自动清除旧路径产物，避免重复渲染。
+
+### 构建
+
+- `prepare.mjs`：tsdown 解析不再硬编码单一路径——按 `$DSH_HARNESS` → 已知检出路径的顺序查找，找不到时报错并给出指引。
+
+### 验证
+
+- 在 rc.8（v0.1.0-rc.8）运行的 Harness 上实机验证：侧边栏 Logo、左上角字样、徽章、新会话欢迎语自定义均恢复可用，主题皮肤与自定义 SVG 显示不受影响。
+
+---
+
 ## 0.2.4 — 2026-08-16
 
 > 品牌色跟随修复 + 品牌映射默认禁用（含输入保护）。

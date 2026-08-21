@@ -23,6 +23,8 @@ import type { HeaderControlsProps } from './HeaderControls.tsx'
 import { mountFloatingControls } from './FloatingControls.tsx'
 import { createThemeBackend } from './theme-backend.ts'
 import { applyBrand } from './brand-apply.ts'
+import { registerBrandSlots } from './brand-slots.tsx'
+import { brandStore } from './brand-store.ts'
 
 /** Plugin identity. */
 export const name = 'dsh-yizi-themes'
@@ -147,6 +149,14 @@ export function apply(ctx: ClientContext): void {
   // Restore the persisted theme on boot (plugin path only).
   themeBackend.reassert()
 
+  // ── Brand slots (rc.8+): render the custom brand through the official
+  // brand seats instead of DOM surgery ─────────────────────────────────────
+  // `sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`
+  // are the designed deployment-branding surface, so this path is stable
+  // across Harness upgrades. On cores without those slots the inject callbacks
+  // never fire and the legacy DOM path (brand-apply.ts) stays active.
+  ctx.effect(() => registerBrandSlots(ctx.slots), 'dsh-yizi-themes: brand slots')
+
   // ── Register session-header controls (theme picker + mode toggle) ──────
   // The utilities list renders at the right edge of the session header title
   // row; order 10 places them AFTER the session-log export button (order 0),
@@ -223,6 +233,11 @@ export function apply(ctx: ClientContext): void {
     if (section === undefined) return customBrand
     return section
   }
+  // Seed the reactive brand store so the slot occupants render immediately.
+  // If the settings mirror already loaded (browser booted before us), the
+  // scope snapshot holds the persisted brand; otherwise the defaults stand in
+  // until the mirror publishes and the subscribe callback below adopts it.
+  brandStore.set(readSettings())
   const setCustomBrand = (patch: Partial<CustomBrandConfig>) => {
     customBrand = {
       ...customBrand,
@@ -233,6 +248,8 @@ export function apply(ctx: ClientContext): void {
     // re-render with the new value instead of snapping back (the store is the
     // row's only data source and only syncs on theme/change otherwise).
     push(customBrand)
+    // Publish to the slot occupants (sidebar / hero marks + name) live.
+    brandStore.set(customBrand)
     // Apply the brand to the sidebar/hero DOM live.
     applyBrand(customBrand)
     // One path write of the whole customBrand object per edit (rather than
@@ -244,6 +261,7 @@ export function apply(ctx: ClientContext): void {
     // and mirror it into the row store so persisted values render.
     customBrand = readSettings()
     push(customBrand)
+    brandStore.set(customBrand)
     applyBrand(customBrand)
   }), 'dsh-yizi-themes: custom-brand settings adoption')
 

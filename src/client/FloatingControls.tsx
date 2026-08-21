@@ -12,8 +12,12 @@
 import { createRoot } from 'react-dom/client'
 import { HeaderControls, type HeaderControlsProps } from './HeaderControls.tsx'
 
-/** Hero fish presence ⇔ blank/new-session state (the header is hidden then). */
+/** Hero presence ⇔ blank/new-session state (the header is hidden then).
+ * Modern (rc.8+) hero mark is OUR slot-rendered `[data-yizi-hero-mark]`;
+ * older cores render the fish SVG (viewBox fingerprint). Either presence
+ * means a blank session. */
 const HERO_SELECTOR = 'svg[viewBox="0 0 23.16 17.04"][width="34"]'
+const HERO_MARK_SELECTOR = '[data-yizi-hero-mark="1"]'
 
 /** Handle to the mounted floating controls. */
 export interface FloatingControlsHandle {
@@ -38,7 +42,9 @@ export function mountFloatingControls(injected: HeaderControlsProps): FloatingCo
   root.render(<HeaderControls {...injected} />)
 
   const sync = (): void => {
-    host.style.display = document.querySelector(HERO_SELECTOR) !== null ? '' : 'none'
+    const heroPresent = document.querySelector(HERO_MARK_SELECTOR) !== null
+      || document.querySelector(HERO_SELECTOR) !== null
+    host.style.display = heroPresent ? '' : 'none'
   }
   sync()
 

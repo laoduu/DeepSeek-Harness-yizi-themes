@@ -12,6 +12,8 @@
  *  - hero fish + headline    → the fish's `viewBox` + its sibling span
  *  - sidebar wordmark / rail → the brand SVG `viewBox` inside the button
  *
+ * Modern (rc.8+) brand slots render through OUR OWN wrappers, so the sizing
+ * and ink for those come from the `[data-yizi-*]` rules at the bottom.
  * ContextMeter (`--meter-tint`) and TrajectoryTable accents have no stable
  * non-hashed hook and are intentionally not overridden here.
  */
@@ -35,7 +37,7 @@
 }
 
 /* HeroShell: the fish hitbox (currentColor rides this) + the headline text
-   that follows it. */
+   that follows it. Legacy path only; the modern slot mark wraps its own ink. */
 span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) {
   color: var(--dsw-alias-brand-primary);
 }
@@ -43,10 +45,26 @@ span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) + span {
   color: var(--dsw-alias-brand-primary);
 }
 
-/* SidebarRoot: expanded wordmark button + collapsed rail toggle (fish mark). */
+/* SidebarRoot: expanded wordmark button + collapsed rail toggle (fish mark).
+   Legacy path only; the modern slot occupants set their own ink. */
 button:has(> svg[viewBox="0 0 182 24"]) {
   color: var(--dsw-alias-brand-primary);
 }
 button:has(> svg[viewBox="0 0 23.16 17.04"][width="24"]) {
   color: var(--dsw-alias-brand-primary);
+}
+
+/* ── Modern brand-slot sizing ─────────────────────────────────────────────
+   Our slot occupants render user logo markup (or the fish) inside
+   `[data-yizi-logo]` / `[data-yizi-hero-mark]` wrappers. The logo height is
+   set per element through the `--yizi-logo-size` custom property so the same
+   markup scales for the sidebar (24) and the hero (34) without attribute
+   surgery. */
+[data-yizi-logo] svg,
+[data-yizi-logo] img {
+  height: var(--yizi-logo-size, 24px);
+  width: auto;
+  max-width: 100%;
+  display: inline-block;
+  vertical-align: middle;
 }

@@ -63,10 +63,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.3.0.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.3.1.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.0/dsh-yizi-themes-0.3.0.tgz
+curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -74,7 +74,7 @@ curl -L -o dsh-yizi-themes-0.3.0.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.0.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.1.tgz
 ```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
@@ -192,7 +192,7 @@ Old bug — upgrade to 0.2.2+.
 Yes. Since 0.2.1 the plugin implements the style-theme dimension itself (persisted in localStorage + applies `body.theme-<id>` directly), so no core patch is needed; light/dark still goes through the core. On cores that DO expose setThemeId (old patch or a fork with the feature), it automatically uses the core path (persisted in settings.yaml).
 
 **Q: Custom branding stopped working after upgrading Harness to v0.1.0-rc.8?**
-0.3.0 adapts to it. rc.8 replaced the sidebar's single `BrandWordmark` (`viewBox="0 0 182 24"`) with official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`). 0.3.0 registers those slots to render the custom logo / wordmark / badge / new-session headline — the slots are the official extension surface, so **future Harness upgrades keep working as long as the slot contract survives**; cores without the slots fall back to the old viewBox injection path automatically. If a same-version reinstall is ignored ("Already up to date"), `remove` then `add`.
+Adapted since 0.3.x (starting 0.3.0). rc.8 replaced the sidebar's single `BrandWordmark` (`viewBox="0 0 182 24"`) with official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`). The plugin registers those slots to render the custom logo / wordmark / badge / new-session headline — the slots are the official extension surface, so **future Harness upgrades keep working as long as the slot contract survives**; cores without the slots fall back to the old viewBox injection path automatically. If a same-version reinstall is ignored ("Already up to date"), `remove` then `add`.
 
 **Q: Want an agent to install it for you?**
 Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.

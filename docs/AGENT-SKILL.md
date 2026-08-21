@@ -50,10 +50,10 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **默认方式：直接下载发布包 tgz（无需源码、无需构建）**
 
-当前版本 **v0.3.0** 的准确下载地址：
+当前版本 **v0.3.1** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.0/dsh-yizi-themes-0.3.0.tgz
+curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
 ```
 
 新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 获取，URL 格式固定为：

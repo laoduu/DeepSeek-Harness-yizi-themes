@@ -238,6 +238,14 @@ export function apply(ctx: ClientContext): void {
   // scope snapshot holds the persisted brand; otherwise the defaults stand in
   // until the mirror publishes and the subscribe callback below adopts it.
   brandStore.set(readSettings())
+  // Number of settings writes we have in flight. Each one settles through the
+  // mirror and re-fires the subscribe listener below with the value of THAT
+  // write — which lags the in-memory edits while the user keeps typing.
+  // Re-adopting that stale value into the row store would force the controlled
+  // inputs back to it mid-composition, flushing the IME buffer into literal
+  // text (pinyin half-typed turns into committed letters). So re-adoption is
+  // suppressed until every pending write has settled.
+  let pendingBrandWrites = 0
   const setCustomBrand = (patch: Partial<CustomBrandConfig>) => {
     customBrand = {
       ...customBrand,
@@ -254,11 +262,18 @@ export function apply(ctx: ClientContext): void {
     applyBrand(customBrand)
     // One path write of the whole customBrand object per edit (rather than
     // one RPC per field) keeps the revision-fenced write narrow.
-    void settingsScope.set('customBrand', customBrand)
+    pendingBrandWrites += 1
+    void settingsScope.set('customBrand', customBrand).finally(() => {
+      pendingBrandWrites -= 1
+    }).catch(() => { /* the mirror recover path keeps the in-memory edit visible */ })
   }
   ctx.effect(() => settingsScope.subscribe(() => {
-    // Adopt the server-confirmed section (initial load and after each write)
-    // and mirror it into the row store so persisted values render.
+    // Skip while our own writes are still settling: the mirror only holds the
+    // most recently settled write, which trails the user's cursor during
+    // fast typing / IME composition. Adopting it would revert the inputs.
+    if (pendingBrandWrites > 0) return
+    // Otherwise adopt the server-confirmed section (initial load, external
+    // changes, or after our writes settle) into the row store.
     customBrand = readSettings()
     push(customBrand)
     brandStore.set(customBrand)

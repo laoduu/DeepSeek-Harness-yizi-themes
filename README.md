@@ -67,10 +67,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.3.0.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.3.1.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.0/dsh-yizi-themes-0.3.0.tgz
+curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -78,7 +78,7 @@ curl -L -o dsh-yizi-themes-0.3.0.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.0.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.1.tgz
 ```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
@@ -198,7 +198,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 可以。0.2.1+ 由插件自实现风格主题（持久化到 localStorage + 自行切换 `body.theme-<id>`），无需给核心打任何补丁；明暗切换仍走核心。若核心本身带风格主题 API（打过旧 patch 或含该特性的构建），则自动走核心路径（持久化到 settings.yaml）。
 
 **Q: Harness 升级到 v0.1.0-rc.8 后，自定义品牌失效了？**
-0.3.0 已适配。rc.8 把侧边栏品牌从单个 `BrandWordmark`（`viewBox="0 0 182 24"`）改成了官方品牌槽位（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`）。0.3.0 改为注册这些槽位来渲染自定义 Logo / 字样 / 徽章 / 新会话标题——槽位是官方扩展面，**后续 Harness 升级只要保留槽位契约即可继续工作**；无槽位的旧核心自动回退到原 viewBox 注入路径。升级后若仍显示旧版，请先 `remove` 再 `add`（同版本内容变了 pnpm 会报 "Already up to date"）。
+0.3.x 已适配（0.3.0 起）。rc.8 把侧边栏品牌从单个 `BrandWordmark`（`viewBox="0 0 182 24"`）改成了官方品牌槽位（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`）。插件改为注册这些槽位来渲染自定义 Logo / 字样 / 徽章 / 新会话标题——槽位是官方扩展面，**后续 Harness 升级只要保留槽位契约即可继续工作**；无槽位的旧核心自动回退到原 viewBox 注入路径。升级后若仍显示旧版，请先 `remove` 再 `add`（同版本内容变了 pnpm 会报 "Already up to date"）。
 
 **Q: 想让 agent 帮我装插件？**
 把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。

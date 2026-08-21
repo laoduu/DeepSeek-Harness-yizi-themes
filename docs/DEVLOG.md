@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-08-21 · v0.3.1：修复设置输入框 IME 跳字（拼音半路被提交）
+
+### 现象
+
+品牌字样 / 徽章字样 / 新会话标题三个文本框输入中文时，拼音打到一半字母就被提交成实字（"跳字"）。Logo、品牌映射等所有文本输入同样受影响。
+
+### 根因：受控输入框 × 异步写入回声
+
+- 输入框是受控组件：`value` = 行 store 的 `customBrand`，`onChange` → `setCustomBrand` → 每次按键**同步**更新 store（这没问题），但同时发起**异步** `settingsScope.set` 持久化。
+- 关键：每次异步写入落定时，设置镜像 `acceptView` 会发布一次快照 → `settingsScope.subscribe` 回调触发 → `readSettings()` 重新读出**刚刚落定的那次写入**的值 → push 进行 store。
+- 快速连续输入（IME 拼音组合尤其密集）时，落定的写入值**滞后**于用户当前光标的值 → store 被回填成过期值 → React 把输入框 DOM 强制设回旧值 → 浏览器把进行中的拼音组合**冲掉/提前提交** → 字母"进去了"。
+- 也就是说：问题不在"同步 push"（值一致时 React 不会碰 DOM），而在"异步回声把过期值推回来"。
+
+### 修复：在途写入计数（pendingBrandWrites）
+
+- `setCustomBrand` 每次写入前 `pendingBrandWrites += 1`，落定（resolve/reject）后 `-1`；
+- `settingsScope.subscribe` 回调在 `pendingBrandWrites > 0` 时**跳过重新采纳**——只做初始加载、外部变更、以及所有写入落定后的采纳。
+- 输入路径从此不再有"过期值回填"，IME 组合全程不被打断；所有既有行为（每键实时预览、每键持久化、外部变更采纳）不变。
+- 时序细节：写入落定时 `acceptView` **同步**触发订阅回调，此时 `pendingBrandWrites` 尚未递减（`.finally` 在整条 set() promise 落定后才跑），所以该次采纳恰好被跳过；最后的写入落定后 store 里已是用户最新值，无需再采纳。
+
+---
+
 ## 2026-08-21 · v0.3.0：适配 rc.8 品牌槽位（升级免疫）
 
 ### rc.8 把侧边栏品牌从"单个 SVG"改成了"槽位组合"

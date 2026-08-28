@@ -6,8 +6,7 @@
  * stylesheet, and wires up output-time brand-text replacement on assistant
  * messages.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Context as ClientContext } from '@deepseek-ai/cordis'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AppearanceRow } from './AppearanceRow.tsx'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'

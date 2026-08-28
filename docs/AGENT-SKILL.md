@@ -50,11 +50,13 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **默认方式：直接下载发布包 tgz（无需源码、无需构建）**
 
-当前版本 **v0.3.1** 的准确下载地址：
+当前版本 **v0.4.0** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
+curl -L -o dsh-yizi-themes-0.4.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.4.0/dsh-yizi-themes-0.4.0.tgz
 ```
+
+> ⚠️ **版本与 Harness 的对应关系**：0.4.0 适配 Harness **v0.1.2-alpha.1+**（官方移除了 `@deepseek-ai/dsh-client-runtime`）；旧版 Harness（rc.8 及以下）请用 0.3.x。若用户报 `dsh-client-runtime missed the module table`，说明 Harness 是新版而插件是旧版，装 0.4.0 即可。
 
 新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 获取，URL 格式固定为：
 `https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v<version>/dsh-yizi-themes-<version>.tgz`

@@ -90,7 +90,7 @@ await build({
   // Mirrors the official clientBundle preset: external wins for table entries,
   // bundle all non-table dependencies.
   external: [
-    '@deepseek-ai/dsh-client-runtime/client',
+    '@deepseek-ai/dsh-client-store',
     '@deepseek-ai/dsh-client-ui-primitives',
     '@deepseek-ai/dsh-client-ui-slots',
     '@deepseek-ai/dsh-client-ui-settings',
@@ -103,7 +103,7 @@ await build({
     'react-dom/client',
   ],
   noExternal: (id) => ([
-    '@deepseek-ai/dsh-client-runtime/client',
+    '@deepseek-ai/dsh-client-store',
     '@deepseek-ai/dsh-client-ui-primitives',
     '@deepseek-ai/dsh-client-ui-slots',
     '@deepseek-ai/dsh-client-ui-settings',

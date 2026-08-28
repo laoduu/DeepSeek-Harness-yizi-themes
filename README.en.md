@@ -22,6 +22,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
 - ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no patch needed on official source or the npm-published rc.5
 - 🧩 **Upgrade-proof (rc.8+)**: branding (top-left logo / wordmark / badge / new-session headline) renders through Harness's official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`) — no internal-DOM dependence, so future Harness upgrades keep working as long as the slot contract survives; cores without the slots fall back to the old viewBox injection path automatically
+- 🔄 **New Harness ready (v0.1.2-alpha.1+)**: after Harness removed `@deepseek-ai/dsh-client-runtime`, the plugin has moved to the new baseline `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis` — 0.4.0 works out of the box on new Harness builds
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
 - 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
@@ -63,10 +64,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.3.1.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.4.0.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
+curl -L -o dsh-yizi-themes-0.4.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.4.0/dsh-yizi-themes-0.4.0.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -74,7 +75,7 @@ curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.1.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.4.0.tgz
 ```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
@@ -193,6 +194,9 @@ Yes. Since 0.2.1 the plugin implements the style-theme dimension itself (persist
 
 **Q: Custom branding stopped working after upgrading Harness to v0.1.0-rc.8?**
 Adapted since 0.3.x (starting 0.3.0). rc.8 replaced the sidebar's single `BrandWordmark` (`viewBox="0 0 182 24"`) with official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`). The plugin registers those slots to render the custom logo / wordmark / badge / new-session headline — the slots are the official extension surface, so **future Harness upgrades keep working as long as the slot contract survives**; cores without the slots fall back to the old viewBox injection path automatically. If a same-version reinstall is ignored ("Already up to date"), `remove` then `add`.
+
+**Q: After upgrading Harness to v0.1.2-alpha.1 the plugin fails with `dsh-client-runtime` missed the module table?**
+New Harness builds removed the `@deepseek-ai/dsh-client-runtime` package, which the old plugin (0.3.x) still references — hence the load failure. **Upgrade to 0.4.0** (migrated to `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`). If you have 0.3.x installed, `remove` first, then `add` 0.4.0, fully restart `dsh web` (Ctrl+C) and hard-refresh the browser (Ctrl+Shift+R).
 
 **Q: Want an agent to install it for you?**
 Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.

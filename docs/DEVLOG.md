@@ -4,7 +4,41 @@
 
 ---
 
-## 2026-08-21 · v0.3.1：修复设置输入框 IME 跳字（拼音半路被提交）
+## 2026-08-28 · v0.4.0：适配新版 Harness（移除 client-runtime 包）
+
+### 现象
+
+Harness 升级到 dsh-v0.1.2-alpha.1 后，web 启动报：
+`failed to import loader entry 80bfc56c (dsh-yizi-themes): client-modules: require("@deepseek-ai/dsh-client-runtime/client") missed the module table`。
+
+### 根因：官方删除了 `@deepseek-ai/dsh-client-runtime` 包
+
+- Harness 提交 `be531688f3 refactor(client): migrate consumers and remove Runtime`（2026-08-23）把客户端运行时拆解：
+  - `defineStore` / `EngineStoreHandle` → 迁入 `@deepseek-ai/dsh-client-store`（同名同签名，`packages/client/store`）；
+  - `ClientContext` 类型 → 迁回 `@deepseek-ai/cordis`；
+  - 从 `packages/bundle/web-app/cordis.patch.yml` 的 client-modules 表删除 `client-runtime` 行。
+- 插件的 `dsh.client.inject` 仍声明 `@deepseek-ai/dsh-client-runtime`，web 前端构建 client-modules 表时没有这个包 → `require` 落到模块表外 → 加载失败。
+- 教训：**第三方插件对 Harness 客户端 API 的每个依赖都是"官方扩展面"的候选**——依赖被官方重新组织时，插件要么随官方迁移，要么锁定旧 Harness 版本。
+
+### 修复：迁移到新基线
+
+- `src/client/settings-store.ts`：`import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'` → `from '@deepseek-ai/dsh-client-store'`（API 完全一致，零行为变化）。
+- `src/client/index.ts`：`ClientContext` 改从 `@deepseek-ai/cordis` 导入（官方 ui-theme 同款写法）。
+- `package.json`：inject 列表、peer/dev deps 里 runtime → store。store 是平台基线（`packages/client/web/src/platform.ts` 的 `PLATFORM_MODULES`），官方规范要求放 devDependencies，不进 peerDependencies。
+- `prepare.mjs`：browser bundle 的 `external` / `noExternal` 列表同步迁移（此前 runtime 是 external=模块表提供，store 同为表内基线）。
+
+### 验证
+
+- 重新 `prepare.mjs` 构建 → 新 `dist/client.js` 零 runtime 引用、含 `dsh-client-store`。
+- `npm pack` → 新 tgz，`dsh plugin remove` + `add` 重装。
+- 重启 `dsh web`：插件正常加载，主题切换与自定义品牌可用，服务端日志无错误。
+- 浏览器实测：`/plugins/dsh-yizi-themes/client.js` 含 `dsh-client-store`、不含 `dsh-client-runtime`。
+
+### 兼容性边界
+
+- **0.4.0 只适配 dsh-v0.1.2-alpha.1+**（依赖已删除的 runtime 无法在旧版跑）；0.3.x 仍适用于旧版 Harness（rc.8）。
+
+---
 
 ### 现象
 

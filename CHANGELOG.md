@@ -1,5 +1,32 @@
 # 版本日志 / Changelog
 
+## 0.4.0 — 2026-08-28
+
+> 适配 Harness dsh-v0.1.2-alpha.1：官方移除 `@deepseek-ai/dsh-client-runtime` 包后，插件迁移到新基线 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`。
+
+### 背景：Harness 移除 client-runtime 包
+
+- Harness 在 dsh-v0.1.2-alpha.1（提交 `be531688f3`）把客户端运行时拆解：`defineStore` / `EngineStoreHandle` 迁入 `@deepseek-ai/dsh-client-store`（同名同签名），`ClientContext` 类型迁回 `@deepseek-ai/cordis`，并**删除了 `@deepseek-ai/dsh-client-runtime` 包**。
+- 旧版插件在 `dsh.client.inject` 里声明注入 `@deepseek-ai/dsh-client-runtime`，web 前端构建 client-modules 模块表时找不到该包 → 启动报 `require("@deepseek-ai/dsh-client-runtime/client") missed the module table`，插件加载失败。
+
+### 迁移
+
+- `src/client/settings-store.ts`：`defineStore` / `EngineStoreHandle` 改从 `@deepseek-ai/dsh-client-store` 导入（API 同名同签名，零行为变化）。
+- `src/client/index.ts`：`ClientContext` 改从 `@deepseek-ai/cordis` 导入。
+- `package.json`：`dsh.client.inject`、peer/dev dependencies 里 `@deepseek-ai/dsh-client-runtime` → `@deepseek-ai/dsh-client-store`（对齐官方规范：store 是平台基线，放 devDependencies）。
+- `prepare.mjs`：浏览器 bundle 的 external / noExternal 列表同步迁移。
+
+### 兼容性
+
+- **0.4.0 仅适配 dsh-v0.1.2-alpha.1 及以上**（依赖已删除的 runtime 包无法在旧版运行）。
+- 主题、自定义品牌、品牌映射、槽位渲染等全部功能行为不变。
+
+### 验证
+
+- 在 dsh-v0.1.2-alpha.1 的 Web profile 实机验证：插件正常加载（模块表解析 `dsh-client-store` 成功）、主题切换与自定义品牌可用、服务端日志无错误。
+
+---
+
 ## 0.3.1 — 2026-08-21
 
 > 修复设置面板文本输入框的 IME「跳字」：拼音打到一半字母被提交成实字。

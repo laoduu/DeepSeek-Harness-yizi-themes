@@ -26,6 +26,7 @@
 - 🧩 **标准插件**：标准 Cordis 插件（`dsh plugin` 安装/卸载），不修改 Harness 仓库任何源码
 - ✅ **干净 Harness 开箱即用**：风格主题由插件自实现（含持久化与 `body.theme-<id>` 应用），官方源码 / npm 发布的 rc.5 无需打任何补丁
 - 🧩 **升级免疫（rc.8+）**：品牌（左上角 Logo / 字样 / 徽章 / 新会话标题）改用 Harness 官方的品牌槽位渲染（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`），不依赖内部 DOM，Harness 后续升级只要保留槽位契约即可继续工作；旧版核心（无槽位）自动回退到原 viewBox 注入路径
+- 🔄 **适配新版 Harness（v0.1.2-alpha.1+）**：官方移除 `@deepseek-ai/dsh-client-runtime` 后，插件已迁移到新基线 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`，0.4.0 起在新版 Harness 上开箱即用
 - 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
 - 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
 - 🔤 **品牌映射**（实验性，默认关闭）：把界面/输出中出现的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词（开启后也绝不改写你正在输入的内容）
@@ -67,10 +68,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.3.1.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.4.0.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.3.1/dsh-yizi-themes-0.3.1.tgz
+curl -L -o dsh-yizi-themes-0.4.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.4.0/dsh-yizi-themes-0.4.0.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -78,7 +79,7 @@ curl -L -o dsh-yizi-themes-0.3.1.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.3.1.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.4.0.tgz
 ```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
@@ -199,6 +200,9 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 
 **Q: Harness 升级到 v0.1.0-rc.8 后，自定义品牌失效了？**
 0.3.x 已适配（0.3.0 起）。rc.8 把侧边栏品牌从单个 `BrandWordmark`（`viewBox="0 0 182 24"`）改成了官方品牌槽位（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`）。插件改为注册这些槽位来渲染自定义 Logo / 字样 / 徽章 / 新会话标题——槽位是官方扩展面，**后续 Harness 升级只要保留槽位契约即可继续工作**；无槽位的旧核心自动回退到原 viewBox 注入路径。升级后若仍显示旧版，请先 `remove` 再 `add`（同版本内容变了 pnpm 会报 "Already up to date"）。
+
+**Q: Harness 升级到 v0.1.2-alpha.1 后，插件启动报 `dsh-client-runtime` missed the module table？**
+官方在新版移除了 `@deepseek-ai/dsh-client-runtime` 包，旧版插件（0.3.x）仍引用它导致加载失败。**升级到 0.4.0**（已迁移到 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`）。若你已安装 0.3.x，先 `remove` 再 `add` 0.4.0，并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
 
 **Q: 想让 agent 帮我装插件？**
 把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。

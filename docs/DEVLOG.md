@@ -4,6 +4,74 @@
 
 ---
 
+## 2026-10-12 · v0.5.0：适配 0.2.0-rc.2（修复桌面版装后起不来）
+
+### 现象与第一现场
+
+用户报「装了这个插件，DeepSeek Harness Desktop 就启动不了」。桌面版崩溃日志（`%APPDATA%\@deepseek-ai\dsh-desktop\logs\crash-*-web-boot.log`）给出确切答案：
+
+```
+Error: web boot: 1 entry did not activate
+dsh-yizi-themes: import failed: client-modules: require("@deepseek-ai/dsh-client-runtime/client")
+  missed the module table — not a platform seed word, not a materialized module, and no registered package factory
+```
+
+关键认识：**桌面版的 web 引导是全有或全无**——只要有 entry 激活失败，整个客户端引导中止，表现为应用打不开。所以一个"少了个依赖"的插件足以让桌面版黑屏。
+
+### 定位：模块表（PLATFORM_MODULES）才是客户端插件的"依赖清单"
+
+`dsh-client-modules` 里有一张硬编码的种子表，客户端 bundle 的 `require()` 只在这张表 + 已物化模块 + 已注册工厂里找。0.2.0-rc.2 的表：
+
+```
+react, react/jsx-runtime, react-dom, react-dom/client,
+@deepseek-ai/cordis, @deepseek-ai/dsh-client-store,
+@deepseek-ai/dsh-client-ui-slots, -ui-primitives, -ui-dockkit
+```
+
+**`@deepseek-ai/dsh-client-runtime` 已整包删除**（它就是被 `dsh-client-store` 取代的那个）。表外的 `require()` 直接抛错；而 `dsh.client.inject` / `external` 里的陌生名字**只是被静默忽略**（不会给出任何警告），所以 `inject` 写错比 `require` 写错更隐蔽。
+
+审计要点（可写成脚本）：把构建产物里所有 `require("...")` 的模块名抓出来，逐个对照种子表；只要有一个不在表内，桌面版就会启动失败。
+
+### 第二层：`settingsScope` 没了，`ui-theme` schema 也窄了
+
+顺手比对 `0.2.0-rc.2` 的 `ui-theme`：schema 只剩 `{ preference, fontSize }`——`customBrand`、风格主题字段都没有；服务 `ctx.settingsScope` 已被 `ctx.configForms` 取代，`setThemeId` 也随 `dsh-client-runtime` 一起消失。旧代码此时是"双层不兼容"：即使修掉 import，品牌设置仍会写失败（表现为能输入、刷新即丢）。
+
+本插件的应对（延续既有设计）：**明暗偏好走核心 `ctx.theme`**（本代仍有 `preference`），**风格主题与自定义品牌由插件自管**——主题是 `localStorage` + `body.theme-<id>`（早就是这样），品牌文档改为 `localStorage`（`dsh-yizi-themes:brand`），写入即推进内存 store 并重绘。附带好处：品牌不再受任何设置传输层变更影响，也不再需要"在途写入计数"那套防抖（0.3.1 为 IME 跳字打的补丁随之退休）。
+
+### 验证方法：隔离 DSH_HOME + 独立 profile + headless 断言
+
+不能拿用户正在用的 desktop profile 做实验（会话本身就跑在里面）。做法：
+
+1. 造一个临时 `DSH_HOME`（`.../yizi-verify/dshhome`），里面放一个 `yizitest` profile：`dsh.profile.bundles` = base + web-app + `dsh-yizi-themes`，依赖指向本地 tgz；
+2. `dsh --profile yizitest --port 34567 --no-open` 起服务（**注意：`web` 不能当位置参数传**，它只接受 app flags，传了会报 `too many arguments`）；
+3. `puppeteer-core` 连本机 Chrome，抓 `pageerror` / `console` / 4xx 请求，断言：样式已注入、槽位产物在 DOM、交互后 localStorage 与 `body.theme-*` 正确、刷新后保持。
+
+第一轮探针就抓到两个静态审计看不见的问题（见下）。
+
+### 坑 1：`IconDarkOutline16` 在本代已改名 → React #130
+
+本代 icon 集把尺寸后缀 `<Name>16` 改成笔画档位 `<Name>Regular` / `<Name>Medium`。具名导入一个不存在的导出**不会报错**，只是 `undefined`；React 渲染到它才抛 `Minified React error #130`（element type is invalid）。静态审计（"require 的模块都在表内"）完全看不出这个。
+
+修复思路不是"改成新名字"了事，而是**不再硬绑名字**：新增 `primitives-compat.ts`，用命名空间导入 + 候选名列表解析（新名优先、旧名兜底），解析不到就省略该图形。Harness 再改一次名字也不会整块崩。
+
+### 坑 2：和官方品牌插件抢同一个 single 槽位
+
+探针里出现：
+```
+single slot "sidebar.brand.mark" already has a registration at priority 0 (registered by dsh-yizi-themes)
+```
+读 `ui-slots` 核心才明白：**single 槽位不允许同优先级的第二个占用者**，且报错文案里的 "registered by X" 指的是**已有占用者**，不是本次注册者（一开始被误导，以为是自己的回调跑了两次）。用计数器（在 `apply()` 与每个 `inject` 回调里埋 `window.__yizi.*++`）证实：`applies=1 / ic=1 / name=1 / hero=1`——自己只注册了一次，那么"已有占用者"就是自己，本次失败的注册者是别人：标准构建**始终**组合 `@deepseek-ai/dsh-client-ui-brand-official`，它注册同样的席位。
+
+再看渲染器：`spec.kind === "single"` 时取 `host.entriesOfSlot(key)[0]`，而排序是按 priority 升序——即**最低优先级渲染**（正是报错文案 "lowest renders" 的含义）。因此本插件以 `priority: -100` 注册：既不与官方撞优先级（不再报错），又确定性地由本插件渲染生效。
+
+> 排查心得：报错文案里的 "registered by" 是**已存在者**。先怀疑"我注册了两次"，用计数器排除后，正确答案是"另有第三方注册了同一席位"。
+
+### 结果
+
+隔离 profile 全绿：启动即激活、侧边栏/hero 品牌与浮动控制条渲染、设置→外观 20 张主题卡 + 自定义品牌输入、切主题与改品牌都即时生效且刷新后保持、控制台零错误、零失败请求。用户正在使用的 desktop profile 全程未被改动（插件始终不在其 `dsh.profile.bundles` 中，桌面版因此仍能启动）。
+
+---
+
 ## 2026-08-28 · v0.4.0：适配新版 Harness（移除 client-runtime 包）
 
 ### 现象
@@ -39,6 +107,8 @@ Harness 升级到 dsh-v0.1.2-alpha.1 后，web 启动报：
 - **0.4.0 只适配 dsh-v0.1.2-alpha.1+**（依赖已删除的 runtime 无法在旧版跑）；0.3.x 仍适用于旧版 Harness（rc.8）。
 
 ---
+
+## 2026-08-21 · v0.3.1：修复设置输入框 IME 跳字（拼音半路被提交）
 
 ### 现象
 

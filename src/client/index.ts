@@ -6,13 +6,14 @@
  * stylesheet, and wires up output-time brand-text replacement on assistant
  * messages.
  */
-import type { Context, Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context } from '@deepseek-ai/cordis'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AppearanceRow } from './AppearanceRow.tsx'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
 import { THEMES } from './themes-list.ts'
-import { THEME_SETTINGS_NAMESPACE, type CustomBrandConfig, type ThemeSettings } from './theme-settings.ts'
+import type { CustomBrandConfig, ThemePreference } from './theme-settings.ts'
+import { loadBrand, saveBrand } from './brand-persistence.ts'
 import { zh, en, type ThemeKey } from './locales.ts'
 import * as themeCss from './themes.ts'
 import rowStyles from './styles.ts'
@@ -28,8 +29,13 @@ import { brandStore } from './brand-store.ts'
 /** Plugin identity. */
 export const name = 'dsh-yizi-themes'
 
-/** Depends on the core ui-theme service (ctx.theme) and settings transport. */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'theme']
+/**
+ * Required client services: slots/locale for the settings row and the header
+ * controls, and the core ui-theme service (`ctx.theme`) for light/dark/system.
+ * No settings-transport service is required — the custom brand lives in
+ * localStorage (see brand-persistence.ts).
+ */
+export const inject = ['slots', 'locale', 'theme']
 
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'yizi.theme'
@@ -51,15 +57,16 @@ function injectThemeSheets(): void {
   document.head.append(style)
 }
 
-/** Read the core theme state (preference + theme) from ctx.theme. */
-function readCoreTheme(ctx: Context): { preference: ThemeSettings['preference']; theme: string } {
+/** Read the core theme state (preference + optional style-theme id) from ctx.theme. */
+function readCoreTheme(ctx: Context): { preference: ThemePreference; theme: string } {
   const runtime = ctx.get('theme') as ThemeRuntime | undefined
   if (runtime === undefined) return { preference: 'system', theme: 'default' }
-  const snapshot = runtime.getTheme()
-  // Older Harness builds (e.g. the npm-published rc.5) have no style-theme
-  // dimension: the snapshot lacks `theme`. Treat it as the default.
+  const snapshot = runtime.getTheme() as { preference?: ThemePreference; theme?: unknown }
+  // Newer Harness builds dropped the style-theme dimension from the core
+  // theme snapshot (the style theme is the plugin's own backend), so `theme`
+  // is absent there and the plugin path owns the id.
   const theme = typeof snapshot.theme === 'string' ? snapshot.theme : 'default'
-  return { preference: snapshot.preference, theme }
+  return { preference: snapshot.preference ?? 'system', theme }
 }
 
 /** Apply brand mappings to every text node under a root element. */
@@ -123,7 +130,7 @@ function observeBrandReplacement(
 
 /** Build the AppearanceRow's injected face from core ctx + plugin settings. */
 function buildInjected(
-  ctx: ClientContext,
+  ctx: Context,
   settings: CustomBrandConfig,
   setSettings: (patch: Partial<CustomBrandConfig>) => void,
   writeThemeId: (id: string) => void,
@@ -134,7 +141,7 @@ function buildInjected(
   }
 }
 
-export function apply(ctx: ClientContext): void {
+export function apply(ctx: Context): void {
   // ── Inject all style sheets ────────────────────────────────────────────
   injectThemeSheets()
 
@@ -204,53 +211,24 @@ export function apply(ctx: ClientContext): void {
     }
   }
 
-  // ── Custom-brand settings transport ────────────────────────────────────
-  // The api-proxy exposes only allowlisted namespaces to the browser (adding
-  // a settings registration alone never makes it remotely writable), so the
-  // row persists custom-brand edits through the CORE 'ui-theme' namespace —
-  // its schema already carries a customBrand field. The decode narrows the
-  // full section {preference, theme, customBrand} to the brand part.
-  let customBrand: CustomBrandConfig = {
-    logo: '', wordmark: 'DEEPSEEK', wordmarkBadge: 'HARNESS',
-    headline: '探索未至之境',
-    mappings: {
-      enabled: false, deepseek: 'DeepSeek', deepseekChinese: '深度求索',
-      harness: 'Harness', deepseekHarness: 'DeepSeek Harness',
-    },
-  }
-  const settingsScope = ctx.settingsScope.bind<CustomBrandConfig>({
-    namespace: THEME_SETTINGS_NAMESPACE,
-    decode: (section: unknown): CustomBrandConfig | undefined => {
-      if (typeof section !== 'object' || section === null) return undefined
-      const custom = (section as { customBrand?: unknown }).customBrand
-      if (typeof custom !== 'object' || custom === null) return undefined
-      return custom as CustomBrandConfig
-    },
-  })
-  const readSettings = (): CustomBrandConfig => {
-    const section = settingsScope.getSnapshot().value
-    if (section === undefined) return customBrand
-    return section
-  }
+  // ── Custom-brand configuration (browser-local) ─────────────────────────
+  // The brand document lives in localStorage next to the style-theme id. The
+  // Harness settings transport serves only namespaces the Host composes, and
+  // the core `ui-theme` schema this plugin used to write through no longer
+  // carries a `customBrand` field, so a plugin-owned browser-local document is
+  // the stable seam across Harness reorganizations of the settings API.
+  let customBrand: CustomBrandConfig = loadBrand()
   // Seed the reactive brand store so the slot occupants render immediately.
-  // If the settings mirror already loaded (browser booted before us), the
-  // scope snapshot holds the persisted brand; otherwise the defaults stand in
-  // until the mirror publishes and the subscribe callback below adopts it.
-  brandStore.set(readSettings())
-  // Number of settings writes we have in flight. Each one settles through the
-  // mirror and re-fires the subscribe listener below with the value of THAT
-  // write — which lags the in-memory edits while the user keeps typing.
-  // Re-adopting that stale value into the row store would force the controlled
-  // inputs back to it mid-composition, flushing the IME buffer into literal
-  // text (pinyin half-typed turns into committed letters). So re-adoption is
-  // suppressed until every pending write has settled.
-  let pendingBrandWrites = 0
+  brandStore.set(customBrand)
   const setCustomBrand = (patch: Partial<CustomBrandConfig>) => {
     customBrand = {
       ...customBrand,
       ...patch,
       mappings: { ...customBrand.mappings, ...(patch.mappings ?? {}) },
     }
+    // Persist synchronously: one whole-document write per edit, so a reload
+    // keeps the edit and no async echo can fight IME composition.
+    saveBrand(customBrand)
     // Push the edit into the row store immediately so the controlled inputs
     // re-render with the new value instead of snapping back (the store is the
     // row's only data source and only syncs on theme/change otherwise).
@@ -259,25 +237,7 @@ export function apply(ctx: ClientContext): void {
     brandStore.set(customBrand)
     // Apply the brand to the sidebar/hero DOM live.
     applyBrand(customBrand)
-    // One path write of the whole customBrand object per edit (rather than
-    // one RPC per field) keeps the revision-fenced write narrow.
-    pendingBrandWrites += 1
-    void settingsScope.set('customBrand', customBrand).finally(() => {
-      pendingBrandWrites -= 1
-    }).catch(() => { /* the mirror recover path keeps the in-memory edit visible */ })
   }
-  ctx.effect(() => settingsScope.subscribe(() => {
-    // Skip while our own writes are still settling: the mirror only holds the
-    // most recently settled write, which trails the user's cursor during
-    // fast typing / IME composition. Adopting it would revert the inputs.
-    if (pendingBrandWrites > 0) return
-    // Otherwise adopt the server-confirmed section (initial load, external
-    // changes, or after our writes settle) into the row store.
-    customBrand = readSettings()
-    push(customBrand)
-    brandStore.set(customBrand)
-    applyBrand(customBrand)
-  }), 'dsh-yizi-themes: custom-brand settings adoption')
 
   // ── Register our AppearanceRow as an ADDITIONAL general item ───────────
   // Uses a distinct id (not 'appearance') so it coexists with the core row
@@ -293,8 +253,11 @@ export function apply(ctx: ClientContext): void {
     bound?.sync(core.preference, themeBackend.readThemeId(), THEMES, settings, ++syncSeq)
   }
   const sync = (): void => {
-    push(readSettings())
+    push(customBrand)
   }
+  // Apply the persisted brand on boot (slot path renders from brandStore; the
+  // legacy DOM path needs this first pass).
+  applyBrand(customBrand)
   // Re-sync on both core theme/change (preference, core-path theme id) and
   // local emitter changes (plugin-path theme id).
   ctx.effect(() => themeBackend.subscribe(sync), 'dsh-yizi-themes: theme state adoption')
@@ -303,7 +266,7 @@ export function apply(ctx: ClientContext): void {
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
     bound = actions
     sync()
-    return buildInjected(ctx, readSettings(), setCustomBrand, (id) => themeBackend.setThemeId(id))
+    return buildInjected(ctx, customBrand, setCustomBrand, (id) => themeBackend.setThemeId(id))
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
@@ -316,9 +279,9 @@ export function apply(ctx: ClientContext): void {
 
   // ── Output-time brand-text replacement + DOM brand application ─────────
   ctx.effect(() => observeBrandReplacement(
-    () => readSettings().mappings,
+    () => customBrand.mappings,
     () => {
-      applyBrand(readSettings())
+      applyBrand(customBrand)
       // Plugin-path themes re-assert the body class after any DOM churn.
       themeBackend.reassert()
       // Show the floating controls only while the hero (blank session) is up.

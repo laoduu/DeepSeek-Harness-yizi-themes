@@ -85,19 +85,16 @@ await build({
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
   },
-  // External only the platform seed modules the loader's module table
-  // provides; everything else (clsx, our own code) is inlined into the bundle.
-  // Mirrors the official clientBundle preset: external wins for table entries,
-  // bundle all non-table dependencies.
+  // External only the platform seed modules the loader's module table provides
+  // (`@deepseek-ai/dsh-client-modules` → PLATFORM_MODULES: React, Cordis, the
+  // client store, and the static UI libraries); everything else (our own code)
+  // is inlined into the bundle. A specifier outside that table fails at
+  // runtime with "missed the module table", so keep this list exact — type-only
+  // imports (cordis, ui-slots, ui-theme, ui-settings) are erased and must NOT
+  // appear here.
   external: [
     '@deepseek-ai/dsh-client-store',
     '@deepseek-ai/dsh-client-ui-primitives',
-    '@deepseek-ai/dsh-client-ui-slots',
-    '@deepseek-ai/dsh-client-ui-settings',
-    '@deepseek-ai/dsh-settings',
-    '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-ui-theme',
     'react',
     'react/jsx-runtime',
     'react-dom/client',
@@ -105,12 +102,6 @@ await build({
   noExternal: (id) => ([
     '@deepseek-ai/dsh-client-store',
     '@deepseek-ai/dsh-client-ui-primitives',
-    '@deepseek-ai/dsh-client-ui-slots',
-    '@deepseek-ai/dsh-client-ui-settings',
-    '@deepseek-ai/dsh-settings',
-    '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-ui-theme',
     'react',
     'react/jsx-runtime',
     'react-dom/client',

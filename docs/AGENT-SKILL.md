@@ -25,7 +25,7 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **② 看 `dsh` 命令属于谁**：
 - `Get-Command dsh`（Windows）`/ which dsh`——若 Source 里含 `DSH Desktop` / `AppData\Roaming\DSH Desktop`，说明 PATH 上的 `dsh` 是**桌面版自带**的 CLI；若指向源码仓库或 pnpm，则是 Web 版。
-- `dsh --version` 可看版本号（桌面版自带 CLI 会回如 `0.1.0-rc.7`）。
+- `dsh --version` 可看版本号（桌面版自带 CLI 会回如 `0.2.0-rc.2`）。
 
 **③ 看已装过的痕迹**（用户可能已经装过一边）：
 - `$DSH_HOME/profiles/<desktop|web>/node_modules/dsh-yizi-themes` 是否存在；
@@ -33,7 +33,7 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **④ 分不清就问用户**：直接问"你是在浏览器打开 127.0.0.1:3080 用，还是用桌面的 Harness 应用？"——比猜可靠。
 
-> 注意：`$DSH_HOME` 默认是 `~/.dsh`（Windows 为 `C:\Users\<用户>\.dsh`）；桌面版与 Web 版**共用同一个 `$DSH_HOME/settings.yaml`**（主题/品牌设置两边通），但 **profile 各自独立**（插件、bundle 层互不相通）。
+> 注意：`$DSH_HOME` 默认是 `~/.dsh`（Windows 为 `C:\Users\<用户>\.dsh`）；桌面版与 Web 版**共用同一个 `$DSH_HOME/settings.yaml`**（核心设置如明暗偏好两边通），但 **profile 各自独立**（插件、bundle 层互不相通）；而 0.5.0 的自定义品牌与风格主题存在**各自浏览器**的 `localStorage` 里，桌面版与 Web 版互不同步。
 
 ---
 
@@ -50,14 +50,13 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **默认方式：直接下载发布包 tgz（无需源码、无需构建）**
 
-当前版本 **v0.4.0** 的准确下载地址：
+当前版本 **v0.5.0** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.4.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.4.0/dsh-yizi-themes-0.4.0.tgz
+curl -L -o dsh-yizi-themes-0.5.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.0/dsh-yizi-themes-0.5.0.tgz
 ```
 
-> ⚠️ **版本与 Harness 的对应关系**：0.4.0 适配 Harness **v0.1.2-alpha.1+**（官方移除了 `@deepseek-ai/dsh-client-runtime`）；旧版 Harness（rc.8 及以下）请用 0.3.x。若用户报 `dsh-client-runtime missed the module table`，说明 Harness 是新版而插件是旧版，装 0.4.0 即可。
-
+> **版本匹配**：0.5.0 面向 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` 桌面版）。若用户的 Harness 更老（客户端运行时仍为 `@deepseek-ai/dsh-client-runtime`，例如 rc.5 / rc.8），请改用 **0.3.x**。若用户报 `dsh-client-runtime missed the module table`，说明 Harness 是新版而插件是旧版，装最新版（≥ 0.4.0）即可。
 新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 获取，URL 格式固定为：
 `https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v<version>/dsh-yizi-themes-<version>.tgz`
 
@@ -110,15 +109,21 @@ dsh plugin --profile <desktop|web> add  /path/to/dsh-yizi-themes-<version>.tgz
 | 检查点 | 期望 |
 |---|---|
 | 右上角主题按钮 | 出现**调色板图标**按钮 + 明暗切换按钮（会话头部右侧） |
-| 新会话（无对话） | 右上角出现**浮动**的主题/明暗按钮 |
-| 设置 → 外观 | 出现"自定义"板块（Logo SVG / 品牌字样 / 徽章字样 / 新会话标题 / 品牌映射） |
-| 持久化 | `$DSH_HOME/settings.yaml` 的 `ui-theme:` 下出现 `customBrand:` 节 |
+| 新会话（无对话） | 右上角出现**浮动**的主题/明暗按钮（容器 `#dsw-yizi-floating-controls`） |
+| 侧边栏品牌 | 出现插件的品牌槽位产物（`[data-yizi-logo]` / `[data-yizi-brand-name]`，默认 `DEEPSEEK`+`HARNESS`） |
+| 设置 → 外观 | 出现"自定义"板块（Logo SVG / 品牌字样 / 徽章字样 / 新会话标题 / 品牌映射），以及主题卡片网格 |
+| 持久化 | 浏览器 `localStorage`：`dsh-yizi-themes:brand`（自定义品牌）与 `dsh-yizi-themes:themeId`（风格主题） |
 | 切换主题 | `body.theme-<id>` 生效，左上角品牌色随主题/明暗变化 |
+| 控制台 | **零报错**（尤其不应有 `client-modules: require(...) missed the module table` 或 React error #130） |
 
-确认 host 半区已加载新代码（注意检查**目标 profile**，不是别的 profile）：
+确认装到目标 profile 的**新代码**（注意检查目标 profile，不是别的 profile）：
 
 ```bash
-grep -c "customBrand" "$DSH_HOME/profiles/<desktop|web>/node_modules/dsh-yizi-themes/dist/client.js"
+# 新代码应命中 @deepseek-ai/dsh-client-store，且不应再出现已删除的运行时/设置服务
+cd "$DSH_HOME/profiles/<desktop|web>/node_modules/dsh-yizi-themes"
+grep -c "dsh-client-store" dist/client.js        # 期望 ≥1
+grep -c "dsh-client-runtime" dist/client.js      # 期望 0
+grep -c "settingsScope" dist/client.js           # 期望 0
 ```
 
 ---
@@ -127,10 +132,12 @@ grep -c "customBrand" "$DSH_HOME/profiles/<desktop|web>/node_modules/dsh-yizi-th
 
 | 现象 | 处理 |
 |---|---|
+| **装完后桌面版/网页端起不来（黑屏、无界面）** | 先看启动日志（桌面版：`%APPDATA%\@deepseek-ai\dsh-desktop\logs\crash-*-web-boot.log`）。若出现 `client-modules: require("<pkg>") missed the module table` + `web boot: 1 entry did not activate`，说明装的是**旧版插件**（≤0.4.0 依赖已删除的 `@deepseek-ai/dsh-client-runtime`）。**引导是全有或全无**，所以一个插件就能拖垮整个应用。处理：`dsh plugin --profile desktop remove dsh-yizi-themes`（纯命令行，不需要界面）→ 完全重启应用 → 改装 0.5.0 |
 | 装完界面没变化 | ① 装错 profile 了？确认用户用的是 desktop 还是 web；② 版本号没变要 remove → add；③ 是否完全重启 |
-| 主题切换没反应 | 看浏览器 F12 → Console 是否报 `runtime.setThemeId is not a function`（极旧构建）；升级到 0.2.1+（插件自带风格主题实现，干净 Harness 开箱即用） |
-| 设置能输入但刷新后丢失 | 数据应写在 `$DSH_HOME/settings.yaml` 的 `ui-theme.customBrand`；没有则看 `settings.mutate` 是否回 `settings-not-exposed` |
-| `settings-not-exposed` | 只有白名单命名空间可被浏览器读写；插件数据走核心 `ui-theme` 命名空间，不要改成自定义命名空间 |
+| 主题切换没反应 | 看浏览器 F12 → Console 是否报 `runtime.setThemeId is not a function`（极旧构建）；升级到 0.5.0（插件自带风格主题实现，干净 Harness 开箱即用） |
+| 控制台报 React error #130 且明暗按钮图形消失 | icon 集改名（`IconDarkOutline16` → `IconDarkOutlineRegular`）。0.5.0 已改为跨世代动态解析（`src/client/primitives-compat.ts`）；旧版请升级 |
+| 控制台报 `single slot "sidebar.brand.mark" already has a registration at priority 0` | 与官方品牌插件（`dsh-client-ui-brand-official`）争抢 single 槽位；报错里的 "registered by X" 指**已存在的**占用者。0.5.0 以 `priority: -100` 注册（single 槽位渲染最低优先级者）；旧版请升级 |
+| 设置能输入但刷新后丢失 | 0.5.0 起数据写在浏览器 `localStorage`（`dsh-yizi-themes:brand`）；若为空，看 Console 是否有 `localStorage` 写入异常（隐私模式/被策略禁用） |
 | 侧边栏折叠后展开空白 | 老版本 bug，升级到 0.2.2+ |
 | `dsh plugin` 报 pnpm 失败 | 按提示查看对应 profile 的 pnpm-workspace.yaml / allowBuilds 提示 |
 | 桌面版装不上/装错 | 确认用的 `--profile desktop`；PATH 上的 `dsh` 可能属于桌面版（见第 0 节），它也能管理同一 DSH_HOME 下的其它 profile |
@@ -143,7 +150,7 @@ grep -c "customBrand" "$DSH_HOME/profiles/<desktop|web>/node_modules/dsh-yizi-th
 dsh plugin --profile <desktop|web> remove dsh-yizi-themes
 ```
 
-重启对应形态后，插件行从组合中移除；`settings.yaml` 里 `ui-theme.customBrand` 属于核心命名空间，卸载后仍保留（无副作用，可手工删除）。
+重启对应形态后，插件行从组合中移除。0.5.0 的自定义品牌/风格主题存在浏览器 `localStorage` 里（`dsh-yizi-themes:brand` / `dsh-yizi-themes:themeId`），卸载后仍保留（无副作用，可在浏览器里手工清除）。
 
 ---
 
@@ -153,6 +160,7 @@ dsh plugin --profile <desktop|web> remove dsh-yizi-themes
 |---|---|
 | `$DSH_HOME`（默认 `~/.dsh`） | 用户数据根目录；桌面版与 Web 版共用 |
 | `$DSH_HOME/profiles/<desktop\|web>` | 对应形态的 profile（依赖 + `dsh.profile.bundles` + `cordis.patch.yml`），互不相通 |
-| `$DSH_HOME/settings.yaml` | 用户设置文档（主题偏好、自定义品牌等，两边共享） |
+| `$DSH_HOME/settings.yaml` | 用户设置文档（核心设置如明暗偏好，两边共享；0.5.0 的品牌/风格主题在浏览器 localStorage，不在此） |
+| 浏览器 localStorage | `dsh-yizi-themes:brand`（自定义品牌）、`dsh-yizi-themes:themeId`（风格主题），每个浏览器各自独立 |
 | `$DSH_HOME/profiles/node_modules` | 内置包回退目录（host 半区外部依赖由此解析） |
 | `AppData\Roaming\DSH Desktop\host-commands\desktop\bin\dsh.cmd` | 桌面版自带的 `dsh` CLI（若 `Get-Command dsh` 指向它） |

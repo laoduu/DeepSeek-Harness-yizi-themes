@@ -6,9 +6,11 @@
  * log button. Uses native CSS custom properties — no new CSS rules required.
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import {
-  IconDarkOutline16, IconLightOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+import { resolveIcon } from './primitives-compat.ts'
+
+/** Light/dark glyphs across Harness icon-set generations (`<Name>16` → `<Name>Regular`). */
+const DarkModeIcon = resolveIcon('IconDarkOutlineRegular', 'IconDarkOutlineMedium', 'IconDarkOutline16')
+const LightModeIcon = resolveIcon('IconLightOutlineRegular', 'IconLightOutlineMedium', 'IconLightOutline16')
 
 /** Custom palette glyph (the platform icon set has no palette/brush icon):
  * outlined paint plate + four paint dots, single-color currentColor to match
@@ -183,7 +185,9 @@ function ModeToggle({ getTheme, setPreference, subscribe }: HeaderControlsProps)
       onClick={() => { setPreference(isDark ? 'light' : 'dark') }}
       title={isDark ? '切换到浅色模式' : '切换到深色模式'}
     >
-      {isDark ? <IconDarkOutline16 size={14} /> : <IconLightOutline16 size={14} />}
+      {isDark
+        ? (DarkModeIcon !== undefined ? <DarkModeIcon size={14} /> : null)
+        : (LightModeIcon !== undefined ? <LightModeIcon size={14} /> : null)}
       <span>{isDark ? '深色' : '浅色'}</span>
     </IconButton>
   )

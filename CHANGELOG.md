@@ -1,5 +1,49 @@
 # 版本日志 / Changelog
 
+## 0.5.0 — 2026-10-12
+
+> 适配 **DeepSeek Harness 0.2.0-rc.2**（`dsh-client-store` / `configForms` 一代；桌面版 `@deepseek-ai/dsh-desktop 0.2.0-rc.2`）。
+> 修复「装到桌面版后 DeepSeek Harness Desktop 起不来」，以及品牌持久化、明暗图标、与官方品牌插件抢槽位三个连带问题。
+
+### 修复 1（严重）：安装后桌面版无法启动
+
+- **现象**：桌面版安装 `dsh-yizi-themes` 后，应用启动即失败（窗口黑屏 / 无界面）。崩溃日志 `logs/crash-*-web-boot.log`：
+  ```
+  Error: web boot: 1 entry did not activate
+  dsh-yizi-themes: import failed: client-modules: require("@deepseek-ai/dsh-client-runtime/client")
+    missed the module table — not a platform seed word, not a materialized module,
+    and no registered package factory
+  ```
+- **根因**：Harness 在 `dsh-client-runtime` 一代之后**删除了 `@deepseek-ai/dsh-client-runtime` 包**，客户端模块表（`dsh-client-modules` 的 `PLATFORM_MODULES` 种子表）改为 `react` / `@deepseek-ai/cordis` / `@deepseek-ai/dsh-client-store` / `@deepseek-ai/dsh-client-ui-slots` / `-ui-primitives` / `-ui-dockkit`。旧包仍 `require('@deepseek-ai/dsh-client-runtime/client')`，模块表里查不到、又没有注册工厂 → 该 entry 激活失败。桌面版的 web 引导是"全有或全无"：**任何 entry 激活失败，整个客户端引导即中止**，所以插件直接拖垮了桌面版启动。
+- **修复**：`defineStore` 改从 `@deepseek-ai/dsh-client-store` 导入（该包是本代平台种子之一），客户端 bundle 不再引用任何已删除模块。
+
+### 修复 2：`ctx.settingsScope` 被移除 → 自定义品牌改为本地持久化
+
+- **根因**：`settingsScope` 服务在本代被 `ctx.configForms` 取代；核心 `ui-theme` 设置 schema 也收窄为 `{ preference, fontSize }`——`customBrand` / 风格主题字段不再存在，`createThemeRuntime().setThemeId` 一并移除。旧代码读写这些字段必然失败（品牌设置"能输入、刷新即丢"）。
+- **修复**：自定义品牌文档（Logo / 品牌字样 / 徽章 / 新会话标题 / 品牌映射）改为**浏览器本地持久化**（`localStorage` key `dsh-yizi-themes:brand`），写入后同步推进内存 store 并重绘，不再依赖任何被移除的设置传输层；风格主题沿用既有的插件自管路径（`localStorage` + `body.theme-<id>`）。明暗偏好仍走核心 `ctx.theme`。
+
+### 修复 3：明暗图标具名导入变 `undefined` → React 崩溃
+
+- **根因**：本代 icon 集改名（`IconDarkOutline16` → `IconDarkOutlineRegular` / `IconDarkOutlineMedium`）。`import { IconDarkOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'` 在运行期得到 `undefined`，React 渲染即抛 `Minified React error #130`（element type is invalid），会话头部 / 浮动控制条整块渲染失败。
+- **修复**：新增 `src/client/primitives-compat.ts`，通过模块命名空间**跨世代解析**图标导出（`IconDarkOutlineRegular` → `IconDarkOutlineMedium` → `IconDarkOutline16`，含 `FishLogo`）；解析不到时该图形省略、控件照常渲染，不再整块崩。
+
+### 修复 4：与官方品牌插件争抢 single 槽位
+
+- **根因**：标准构建里**始终**组合 `@deepseek-ai/dsh-client-ui-brand-official`，它也在 `sidebar.brand.mark` / `sidebar.brand.name` 注册（默认 priority 0）。single 槽位**不允许同优先级第二个占用者**，后注册者抛
+  `single slot "sidebar.brand.mark" already has a registration at priority 0 (registered by dsh-yizi-themes)`——谁的注册晚谁报错，行为随机且控制台报错。
+- **修复**：本插件的品牌槽位统一以 `priority: -100` 注册。single 槽位渲染**最低优先级**的占用者，因此两者可以共存、且本插件的品牌确定性地生效（官方插件不再报错）。
+
+### 工程侧
+
+- `package.json`：`dsh.client.inject` 指向本代真实存在的客户端包（`@deepseek-ai/dsh-client-locale` / `-ui-theme`）；外部依赖收敛为平台种子（`@deepseek-ai/dsh-client-store` / `-ui-primitives` / `react` / `react-dom/client` / `react/jsx-runtime`）的 peer（`*`、optional）。
+- 新增回归验证方法：隔离 `DSH_HOME` + 独立 profile 起 `dsh --profile <test>`，用 headless 浏览器断言"样式注入 / 槽位渲染 / 主题切换持久化 / 品牌持久化 / 零控制台错误"。
+
+### 验证（隔离 profile，0.2.0-rc.2 运行时）
+
+启动即激活；侧边栏品牌（`DEEPSEEK`+`HARNESS`）、新会话 hero 品牌、浮动控制条均渲染；设置→外观出现 20 张主题卡片与自定义品牌输入；切主题 → `body.theme-aurora` 且 localStorage 落盘，刷新后保持；改品牌字样 → 侧边栏实时更新、刷新后保持；**控制台零错误、零失败请求**。
+
+---
+
 ## 0.4.0 — 2026-08-28
 
 > 适配 Harness dsh-v0.1.2-alpha.1：官方移除 `@deepseek-ai/dsh-client-runtime` 包后，插件迁移到新基线 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`。

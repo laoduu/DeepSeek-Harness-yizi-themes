@@ -2,11 +2,9 @@
  * dsh-yizi-themes — host (Node) half.
  *
  * Registers the brand-mapping service that holds the plugin config and exposes
- * applyMappings(). The browser half persists custom-brand edits through the
- * CORE `ui-theme` settings namespace (the api-proxy only exposes that
- * allowlisted namespace to browsers; a plugin-registered namespace is not
- * remotely readable or writable). Config arrives from cordis.yml; no runtime
- * schema is declared here.
+ * applyMappings(). The browser half renders the theme pack and keeps its own
+ * custom-brand document in localStorage, so nothing here touches the settings
+ * transport. Config arrives from cordis.yml; no runtime schema is declared.
  */
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { applyBrandMappings } from '../config.ts'

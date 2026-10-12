@@ -20,10 +20,9 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 🎭 **19 themes**: from flowing auroras to cyberpunk neon, from Morandi greys to Forbidden-City vermilion
 - 🌗 **Dual mode**: every theme has hand-tuned light/dark token pairs, auto-switching with your system
 - 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
-- ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no patch needed on official source or the npm-published rc.5
-- 🧩 **Upgrade-proof (rc.8+)**: branding (top-left logo / wordmark / badge / new-session headline) renders through Harness's official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`) — no internal-DOM dependence, so future Harness upgrades keep working as long as the slot contract survives; cores without the slots fall back to the old viewBox injection path automatically
-- 🔄 **New Harness ready (v0.1.2-alpha.1+)**: after Harness removed `@deepseek-ai/dsh-client-runtime`, the plugin has moved to the new baseline `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis` — 0.4.0 works out of the box on new Harness builds
-- 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
+- ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no core patch needed
+- 🧩 **Upgrade-proof (official slots)**: branding (top-left logo / wordmark / badge / new-session headline) renders through Harness's official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`), registered at a lower `priority` so it coexists with — and wins over — the stock official brand plugin; cores without the slots fall back to the old viewBox injection path automatically
+- 🧱 **Current-generation support (0.5.0)**: targets the `dsh-client-store` / `configForms` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` desktop app); custom branding persists in browser-local storage (`localStorage`) and needs no Harness settings transport- 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
 - 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
 - 📍 **Controls everywhere**: theme picker + mode toggle in the session header, and floating controls on blank new sessions
@@ -60,23 +59,22 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ## 📦 Installation
 
-> **Prerequisite**: a DeepSeek Harness checkout that can run `pnpm dsh web` (including its profile).
+> **Prerequisite**: Harness **≥ v0.1.2-alpha.1** (the `dsh-client-store` generation, including the 0.2.0-rc.2 desktop app).
+> For older rc.5 / rc.8 cores (client runtime still `@deepseek-ai/dsh-client-runtime`), use the 0.3.x line.
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.4.0.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.5.0.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.4.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.4.0/dsh-yizi-themes-0.4.0.tgz
-```
+curl -L -o dsh-yizi-themes-0.5.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.0/dsh-yizi-themes-0.5.0.tgz```
 
 2. Stop the running `dsh web` (Ctrl+C);
 3. Install:
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.4.0.tgz
-```
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.0.tgz```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
 > and the web profile are separate profiles (`$DSH_HOME/profiles/<desktop|web>`),
@@ -181,7 +179,7 @@ namespace and remains after uninstall (harmless; remove manually if you like).
 If the version did not change you must `remove → add` (see above), fully restart `dsh web` (Ctrl+C), and hard-refresh the browser (Ctrl+Shift+R).
 
 **Q: Settings accept input but are lost after refresh?**
-Check whether `$DSH_HOME/settings.yaml` gained a `ui-theme.customBrand` section. If not, open F12 → Network and look for `settings.mutate` returning `settings-not-exposed` (write refused). The plugin writes through the core `ui-theme` namespace (the api-proxy allowlist) — do not switch to a custom namespace.
+Since 0.5.0 custom branding and style themes persist in **browser-local storage** (`localStorage`: `dsh-yizi-themes:brand` / `dsh-yizi-themes:themeId`) and no longer touch `$DSH_HOME/settings.yaml`. If values are lost after refresh: make sure you are not in private/incognito mode (localStorage may be disabled); desktop and web store data **independently** (not synced).
 
 **Q: Top-left brand color does not follow the theme?**
 Make sure the logo/wordmark is set and uses `currentColor` or `var(--dsw-alias-brand-primary)`; hardcoded colors never adapt.
@@ -189,14 +187,21 @@ Make sure the logo/wordmark is set and uses `currentColor` or `var(--dsw-alias-b
 **Q: Blank sidebar after collapse/expand?**
 Old bug — upgrade to 0.2.2+.
 
+**Q: DeepSeek Harness Desktop won't start after installing the plugin?**
+Versions ≤ 0.4.0 still `require`d `@deepseek-ai/dsh-client-runtime/client`, and that package was **deleted** in the `dsh-client-store` generation. The desktop web bootstrap is all-or-nothing — one entry failing to activate aborts the whole client boot — so the app blank-screens. 0.5.0 moves to the current platform module (`@deepseek-ai/dsh-client-store`) and adapts to the narrowed `ui-theme` schema.
+If it is already broken and the UI won't open: run `dsh plugin --profile desktop remove dsh-yizi-themes` from a terminal (no GUI needed), fully quit and restart the desktop app, then install 0.5.0.
+
 **Q: Does it work on stock Harness (official source / npm-published rc.5)?**
-Yes. Since 0.2.1 the plugin implements the style-theme dimension itself (persisted in localStorage + applies `body.theme-<id>` directly), so no core patch is needed; light/dark still goes through the core. On cores that DO expose setThemeId (old patch or a fork with the feature), it automatically uses the core path (persisted in settings.yaml).
+0.5.0 targets the `dsh-client-store` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` desktop app); older rc.5 / rc.8 cores should use 0.3.x. Style themes have always been implemented by the plugin itself (`localStorage` + `body.theme-<id>`), so no core patch is needed; light/dark still goes through the core `ctx.theme`.
+
+**Q: Console reports `single slot "sidebar.brand.mark" already has a registration at priority 0`?**
+Older builds registered the brand slots at the default priority 0, colliding with the stock official brand plugin (`dsh-client-ui-brand-official`) — a single slot rejects a second occupant at the same priority (the "registered by X" in the message names the **existing** occupant). Since 0.5.0 the plugin registers at `priority: -100`; a single slot renders its lowest-priority occupant, so both coexist and the plugin's branding wins.
 
 **Q: Custom branding stopped working after upgrading Harness to v0.1.0-rc.8?**
 Adapted since 0.3.x (starting 0.3.0). rc.8 replaced the sidebar's single `BrandWordmark` (`viewBox="0 0 182 24"`) with official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`). The plugin registers those slots to render the custom logo / wordmark / badge / new-session headline — the slots are the official extension surface, so **future Harness upgrades keep working as long as the slot contract survives**; cores without the slots fall back to the old viewBox injection path automatically. If a same-version reinstall is ignored ("Already up to date"), `remove` then `add`.
 
 **Q: After upgrading Harness to v0.1.2-alpha.1 the plugin fails with `dsh-client-runtime` missed the module table?**
-New Harness builds removed the `@deepseek-ai/dsh-client-runtime` package, which the old plugin (0.3.x) still references — hence the load failure. **Upgrade to 0.4.0** (migrated to `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`). If you have 0.3.x installed, `remove` first, then `add` 0.4.0, fully restart `dsh web` (Ctrl+C) and hard-refresh the browser (Ctrl+Shift+R).
+New Harness builds removed the `@deepseek-ai/dsh-client-runtime` package, which the old plugin (0.3.x) still references — hence the load failure. **Upgrade to 0.4.0 or later (latest is 0.5.0)** (migrated to `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`). If you have 0.3.x installed, `remove` first, then `add` the latest release, fully restart `dsh web` (Ctrl+C) and hard-refresh the browser (Ctrl+Shift+R).
 
 **Q: Want an agent to install it for you?**
 Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.

@@ -19,14 +19,29 @@
  * with a dev placeholder).
  */
 import React, { useSyncExternalStore } from 'react'
-import { FishLogo } from '@deepseek-ai/dsh-client-ui-primitives'
 import { brandStore, markModernBrandPath } from './brand-store.ts'
 import { cleanupLegacyBrandDom } from './brand-apply.ts'
+import { resolveIcon } from './primitives-compat.ts'
+
+/** Fish fallback across Harness generations (the export keeps its name; the
+ * lookup only guards against it disappearing in a future build). */
+const FishLogo = resolveIcon('FishLogo')
+
+/**
+ * Registration priority for every brand seat.
+ *
+ * The official deployment-brand plugin (`dsh-client-ui-brand-official`) is
+ * composed in every standard build and registers the same single seats at the
+ * default priority 0. A single slot rejects a SECOND occupant at the SAME
+ * priority, so a lower priority both avoids the collision and still renders —
+ * for a single slot the lowest-priority occupant is the one rendered.
+ */
+const BRAND_SLOT_PRIORITY = -100
 
 /** Minimal slots face consumed by the registration (avoids private type deps). */
 export interface BrandSlots {
   inject(key: string, callback: () => unknown): () => void
-  register(spec: { name: string }, component: unknown): () => void
+  register(spec: { name: string; priority?: number }, component: unknown): () => void
 }
 
 /** Inline brand-ink for every occupant (theme + light/dark adaptive). */
@@ -67,7 +82,7 @@ export function YiziBrandMark({ size }: { size: number }): React.ReactElement {
     return React.createElement(BrandMarkup, { markup: custom.logo, size })
   }
   return React.createElement('span', { 'data-yizi-logo': 'mark', style: BRAND_COLOR },
-    React.createElement(FishLogo, { size }))
+    FishLogo !== undefined ? React.createElement(FishLogo, { size }) : null)
 }
 
 /** `sidebar.brand.name` occupant: wordmark + badge cluster. */
@@ -112,7 +127,7 @@ export function YiziHeroMark({ size, className }: { size: number; className?: st
   // hero mark class) rides the wrapper so hover motion still applies.
   const inner = custom.logo !== ''
     ? React.createElement(BrandMarkup, { markup: custom.logo, size })
-    : React.createElement(FishLogo, { size, className: undefined })
+    : (FishLogo !== undefined ? React.createElement(FishLogo, { size, className: undefined }) : null)
   return React.createElement('span', {
     'data-yizi-hero-mark': '1',
     className,
@@ -139,15 +154,15 @@ export function registerBrandSlots(slots: BrandSlots): () => void {
   const disposers: Array<() => void> = []
   disposers.push(slots.inject('sidebar.brand.mark', () => {
     activate()
-    return slots.register({ name: 'sidebar.brand.mark' }, YiziBrandMark)
+    return slots.register({ name: 'sidebar.brand.mark', priority: BRAND_SLOT_PRIORITY }, YiziBrandMark)
   }))
   disposers.push(slots.inject('sidebar.brand.name', () => {
     activate()
-    return slots.register({ name: 'sidebar.brand.name' }, YiziBrandName)
+    return slots.register({ name: 'sidebar.brand.name', priority: BRAND_SLOT_PRIORITY }, YiziBrandName)
   }))
   disposers.push(slots.inject('conversation.hero.brand.mark', () => {
     activate()
-    return slots.register({ name: 'conversation.hero.brand.mark' }, YiziHeroMark)
+    return slots.register({ name: 'conversation.hero.brand.mark', priority: BRAND_SLOT_PRIORITY }, YiziHeroMark)
   }))
   return () => {
     for (const dispose of disposers) dispose()

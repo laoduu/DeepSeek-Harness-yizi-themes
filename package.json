@@ -1,6 +1,6 @@
 {
   "name": "dsh-yizi-themes",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "YiziMarkdown theme pack for DeepSeek Harness — 19 style themes with custom brand and prompt mapping.",
   "type": "module",
   "main": "dist/index.js",
@@ -16,12 +16,7 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-store",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-slots",
-        "@deepseek-ai/dsh-settings",
         "@deepseek-ai/dsh-client-ui-theme"
       ],
       "platform": "web",
@@ -46,15 +41,28 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-client-connection": "workspace:^",
-    "@deepseek-ai/dsh-client-store": "workspace:^",
-    "@deepseek-ai/dsh-client-locale": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-settings": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-theme": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-client-store": "*",
+    "@deepseek-ai/dsh-client-ui-primitives": "*",
+    "@deepseek-ai/dsh-client-ui-theme": "*",
     "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-store": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-primitives": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-theme": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",

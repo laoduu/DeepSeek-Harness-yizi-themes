@@ -4,6 +4,67 @@
 
 ---
 
+## 2026-10-22 · v0.5.1：适配 0.2.1-rc.2 + 新会话浮动菜单定位
+
+### 新会话页：浮层与「打开侧边栏」按钮重叠
+
+0.2.1 的空会话头虽然隐藏了标题行（`hideChrome`），但**照常渲染 `conversation.session.header.corner` 座位**——右栏展开按钮（`@deepseek-ai/dsh-client-ui-sidebar-right` 的 `ExpandButton`）就坐在那里。插件给浮动主题菜单定的是 `right: 28px`，和这个按钮踩在同一块区域。
+
+修法不是写死按钮尺寸，而是**量**：`place()` 每次 `sync()` 用 `getBoundingClientRect()` 取 `[data-conversation-header-corner]` 的实时位置，把浮层 `right` 抬到该座位左侧 8px（座位为空时回落到 28px），并监听 `resize`。这样窗口宽度、header 内边距（`padding: 10px 28px 0 20px`）、`margin-right: -16px` 之类的变化都能自动跟随。教训：**fixed 浮层要避开"会渲染但不可见"的兄弟座位**。
+
+### 侧边栏一展开，浮层又压到右栏上
+
+第一版只避让 corner 座位，用户第二次反馈：把右栏拉开后，浮层位置没变，却盖住了右栏内容。原因是右栏 `@deepseek-ai/dsh-client-ui-sidebar-right` 的面板：
+
+```css
+.OUqwTW_panel{position:absolute;top:0;bottom:0;right:0;width:<width>px}
+.OUqwTW_panel[data-sidebar-right-open] [data-dockkit-host=dock]{visibility:visible;transform:none}
+```
+
+- 面板**折叠时就已经占着最终宽度**（`position:absolute`），只是内容用 `transform:translateX(--dsh-sidebar-width)` 滑到屏幕外；
+- 展开时 `ExpandButton` 按设计「shown 时不渲染」→ corner 座位变空 → 浮层回落到 `28px`，正好落在面板的顶部 chrome（折叠 / 全屏按钮）和内容上。
+
+于是把「右上角障碍物」统一成一个集合：corner 座位 + `[data-sidebar-right-open]` 面板，取**最左边界**作为锚点，浮层放在它左侧 8px。
+
+**触发器的坑**：展开只切换面板上的**属性**，没有节点插入、宽度也不变 → 原来的 body `childList` 观察器和 `ResizeObserver` 都不会被触发（这也解释了用户看到的"位置没变"）。三个触发器都得有：
+
+1. `window resize`（窗口变化）；
+2. 面板上的 `ResizeObserver`（拖拽改宽，只改内联 style，无 DOM 节点变化）；
+3. 只过滤 `data-sidebar-right-open` / `data-sidebar-right-panel` 的 `MutationObserver`（展开 / 折叠 / 全屏切换）。
+
+右栏全屏（`data-sidebar-right-panel=fullscreen`，宽 100vw）时左侧没有可放位置，浮层直接隐藏；折叠或退出全屏后由 2/3 号触发器恢复。另外 `place()` 加了 `heroVisible` 守卫，避免 hero 已消失后 ResizeObserver 回调把它重新显示出来。
+
+### 「打开侧边栏」按钮所在座位的槽位语义复核
+
+`renderOutletContent` 对 single 槽的逻辑（`dsh-client-ui-renderer`）：
+
+```js
+const entry = host.entriesOfSlot(slotKey)[0]
+if (!entry) return entries.length > 0 ? deadCell() : <Fragment>{fallback}</Fragment>
+```
+
+即：**没有 entry 时才渲染 fallback；entry 存在但全部失效时渲染 `data-slot-error` 死格**，不会回退。这解释了为什么插件「始终注册 hero 槽」会把官方悬停动画鱼永久顶掉——`fallback: <HeroFish/>` 永远不渲染。0.5.1 改为跟随 `brandStore.logo` 动态注册/注销。
+
+### 一个坑：CSS 源文件改了，bundle 里仍是旧的
+
+`brand-overrides.css` 只是**源文件**；`src/client/index.ts` 实际 import 的是 `brand-overrides.ts`（由 `scripts/gen-themes.mjs` 把 CSS 转成模板字符串的生成物）。只改 CSS 再 `node prepare.mjs`，构建**不会**重新生成 `.ts`，产物里的规则仍是旧的（本次差点把 P2-2/P2-3 漏掉，靠 grep 产物里 `has(svg[` 才发现）。
+
+正确姿势：
+
+```bash
+node scripts/gen-themes.mjs <cssDir> <outFile> src/client/brand-overrides.css brand-overrides src/client/brand-overrides.ts
+node prepare.mjs
+```
+
+注意第 2 个参数 `outFile` 若指向 `src/client/themes.ts` 且 `cssDir` 传错（例如传了空目录），**会把 themes.ts 覆盖成空壳**——本次误传 `src/client/themes`（那是空目录）就中招了，靠 `git checkout -- src/client/themes.ts` 恢复。主题 CSS 的源在 `patch/packages/client/ui-theme/src/styles/themes/*.css`。
+
+### 0.2.1 主题侧变化
+
+- 运行态文字扫光改用 `TextShimmer` 原语，扫光色是 `--dsw-alias-label-shimmer`（不再是 `[role=status][aria-live]` 上的 `background-image`，0.2.1 的 status 元素已不带 `aria-live`）；`--dsh-state-ongoing` 在整个 0.2.1 里没有定义。
+- `--dsw-alias-settings-card-fill/-stroke`、`--dsw-alias-label-deep-diving(-shimmer)`、`--dsw-alias-menu-icon`、`--dsw-alias-turn-trigger-*` 等新 token 用 `body[class*="theme-"]` 从各主题已有令牌派生即可，`var()` 在同元素上解析，亮/暗自动跟随，`default` 主题不挂 class 保持核心原值。`bg-mask-*`（中性黑/白透明遮罩）与 `file-diff-*`（语义绿/红）**故意不主题化**。
+
+---
+
 ## 2026-10-12 · v0.5.0：适配 0.2.0-rc.2（修复桌面版装后起不来）
 
 ### 现象与第一现场

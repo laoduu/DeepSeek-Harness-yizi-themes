@@ -1,5 +1,6 @@
 /**
- * Brand-accent overrides for core Harness components.
+ * Brand-accent overrides + post-0.5.0 token compatibility for core Harness
+ * components.
  *
  * Injected by the plugin so brand elements follow the ACTIVE theme's
  * `--dsw-alias-brand-primary` (theme + light/dark adaptive) instead of the
@@ -7,10 +8,14 @@
  * build, so every rule here anchors on STABLE DOM hooks (data attributes,
  * roles, SVG viewBox fingerprints) that survive any build:
  *
- *  - running status shimmer  → the `[role="status"]` inside `[data-chat-flow=""]`
- *  - state dot (ongoing)     → `[data-state="ongoing"]`
- *  - hero fish + headline    → the fish's `viewBox` + its sibling span
+ *  - hero fish + headline    → the fish's `viewBox` (+ its sibling span)
  *  - sidebar wordmark / rail → the brand SVG `viewBox` inside the button
+ *
+ * The 0.2.1 shell moved the running-status shimmer to the `TextShimmer`
+ * primitive (a masked sweep painting `--dsw-alias-label-shimmer`) and dropped
+ * the old `[data-chat-flow] [role=status][aria-live]` / `--dsh-state-ongoing`
+ * hooks, so those are themed through the ALIAS BLOCK below instead of a
+ * background-image override.
  *
  * Modern (rc.8+) brand slots render through OUR OWN wrappers, so the sizing
  * and ink for those come from the `[data-yizi-*]` rules at the bottom.
@@ -18,39 +23,43 @@
  * non-hashed hook and are intentionally not overridden here.
  */
 
-/* ChatView running-status ("Deep diving...") shimmer follows the brand color.
-   Only overrides the gradient image; position/size/clip come from the app. */
-[data-chat-flow=""] [role="status"][aria-live="polite"] {
-  background-image: linear-gradient(
-    90deg,
-    var(--dsw-alias-brand-primary) 0%,
-    var(--dsw-alias-brand-primary) 40%,
-    color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent) 50%,
-    var(--dsw-alias-brand-primary) 60%,
-    var(--dsw-alias-brand-primary) 100%
-  );
-}
-
-/* StateDot ongoing chase rides the brand accent. */
-[data-state="ongoing"] {
-  --dsh-state-ongoing: var(--dsw-alias-brand-primary);
+/* ── Alias compatibility (Harness 0.2.1) ─────────────────────────────────
+   The 0.2.1 design system added/changed alias tokens that postdate the 19
+   shipped palettes. Derive them from aliases each theme already owns, so these
+   surfaces follow the theme instead of the static core blue-grey. Scoped to
+   the plugin's own `body.theme-<id>` class: the stock `default` palette keeps
+   the core values untouched. `var()` references resolve against the same
+   element, so the light/dark palette still flows through. */
+body[class*="theme-"] {
+  --dsw-alias-settings-card-fill: var(--dsw-alias-bg-layer-2);
+  --dsw-alias-settings-card-stroke: var(--dsw-alias-border-l4);
+  --dsw-alias-menu-icon: var(--dsw-alias-label-primary-dimmed);
+  --dsw-alias-label-deep-diving: color-mix(in srgb, var(--dsw-alias-brand-primary) 72%, var(--dsw-alias-label-primary));
+  --dsw-alias-label-deep-diving-shimmer: color-mix(in srgb, var(--dsw-alias-brand-primary) 32%, var(--dsw-alias-label-primary));
+  --dsw-alias-label-shimmer: color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);
+  --dsw-alias-turn-trigger-bg: var(--dsw-alias-markdown-code-block);
+  --dsw-alias-turn-trigger-bg-hover: var(--dsw-alias-interactive-bg-hover);
+  --dsw-alias-switch-thumb: var(--dsw-alias-bg-base);
+  --dsw-alias-toast-label: var(--dsw-alias-label-primary-inverted);
 }
 
 /* HeroShell: the fish hitbox (currentColor rides this) + the headline text
-   that follows it. Legacy path only; the modern slot mark wraps its own ink. */
-span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) {
+   that follows it. Matches both the legacy direct `<svg>` child and the modern
+   slot wrapper (`div[data-slot][display:contents]` → `[data-yizi-hero-mark]` →
+   svg), hence the descendant `:has()` form. */
+span:has(svg[viewBox="0 0 23.16 17.04"][width="34"]) {
   color: var(--dsw-alias-brand-primary);
 }
-span:has(> svg[viewBox="0 0 23.16 17.04"][width="34"]) + span {
+span:has(svg[viewBox="0 0 23.16 17.04"][width="34"]) + span {
   color: var(--dsw-alias-brand-primary);
 }
 
 /* SidebarRoot: expanded wordmark button + collapsed rail toggle (fish mark).
-   Legacy path only; the modern slot occupants set their own ink. */
-button:has(> svg[viewBox="0 0 182 24"]) {
+   Descendant form for the same reason (the slot wrapper sits in between). */
+button:has(svg[viewBox="0 0 182 24"]) {
   color: var(--dsw-alias-brand-primary);
 }
-button:has(> svg[viewBox="0 0 23.16 17.04"][width="24"]) {
+button:has(svg[viewBox="0 0 23.16 17.04"][width="24"]) {
   color: var(--dsw-alias-brand-primary);
 }
 

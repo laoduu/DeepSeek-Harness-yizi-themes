@@ -18,6 +18,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
+import { THEMES } from './themes-list.ts'
 
 /** The theme face consumed by the plugin's pickers and settings row. */
 export interface ThemeFace {
@@ -44,6 +45,9 @@ export interface ThemeBackend {
 
 const THEME_STORAGE_KEY = 'dsh-yizi-themes:themeId'
 
+/** Style-theme ids this plugin owns (`body.theme-<id>`); only these are cleaned. */
+const OWNED_THEME_IDS: ReadonlySet<string> = new Set(THEMES.map((theme) => theme.id))
+
 /** Build the backend for one plugin fiber. */
 export function createThemeBackend(runtime: ThemeRuntime, ctx: Context): ThemeBackend {
   const coreThemeApi = typeof (runtime as ThemeRuntime).setThemeId === 'function'
@@ -62,8 +66,12 @@ export function createThemeBackend(runtime: ThemeRuntime, ctx: Context): ThemeBa
   const applyThemeClass = (id: string): void => {
     const body = document.body
     if (body === null) return // not booted yet; the observer reasserts later
+    // Remove only classes this plugin owns: a blanket `theme-*` sweep could
+    // delete an unrelated host/third-party class of the same shape.
     for (const cls of [...body.classList]) {
-      if (cls.startsWith('theme-')) body.classList.remove(cls)
+      if (cls.startsWith('theme-') && OWNED_THEME_IDS.has(cls.slice('theme-'.length))) {
+        body.classList.remove(cls)
+      }
     }
     if (id !== '' && id !== 'default') body.classList.add(`theme-${id}`)
   }

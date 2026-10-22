@@ -26,7 +26,8 @@
 - 🧩 **标准插件**：标准 Cordis 插件（`dsh plugin` 安装/卸载），不修改 Harness 仓库任何源码
 - ✅ **干净 Harness 开箱即用**：风格主题由插件自实现（含持久化与 `body.theme-<id>` 应用），无需给 Harness 打任何补丁
 - 🧩 **升级免疫（官方槽位）**：品牌（左上角 Logo / 字样 / 徽章 / 新会话标题）通过 Harness 官方品牌槽位渲染（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`），并以更低 `priority` 注册，与标准构建自带的官方品牌插件共存且本插件生效；无槽位的旧核心自动回退到原 viewBox 注入路径
-- 🧱 **本代适配（0.5.0）**：适配 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` 桌面版）；自定义品牌持久化在浏览器本地（`localStorage`），不依赖 Harness 的设置传输层- 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
+- 🧱 **本代适配（0.5.1）**：适配 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` 桌面版）；自定义品牌持久化在浏览器本地（`localStorage`），不依赖 Harness 的设置传输层
+- 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
 - 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
 - 🔤 **品牌映射**（实验性，默认关闭）：把界面/输出中出现的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词（开启后也绝不改写你正在输入的内容）
 - 📍 **随处可切换**：会话头部右上角 + 新会话（无对话）时的浮动按钮
@@ -63,22 +64,22 @@
 
 ## 📦 安装教程
 
-> **前置条件**：Harness **≥ v0.1.2-alpha.1**（`dsh-client-store` 一代；含 0.2.0-rc.2 桌面版）。
+> **前置条件**：Harness **≥ v0.1.2-alpha.1**（`dsh-client-store` 一代；含 0.2.0-rc.2 / 0.2.1-rc.2 桌面版）。
 > 更老的 rc.5 / rc.8（客户端运行时仍为 `@deepseek-ai/dsh-client-runtime`）请用 0.3.x 版本。
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.5.0.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.5.1.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.0.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.0/dsh-yizi-themes-0.5.0.tgz```
+curl -L -o dsh-yizi-themes-0.5.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.1/dsh-yizi-themes-0.5.1.tgz```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
 3. 安装：
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.0.tgz```
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.1.tgz```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
 > 安装到桌面版自己的 profile（`$DSH_HOME/profiles/desktop`）——web 与桌面版是两个独立 profile，互不相通。
@@ -194,10 +195,10 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 
 **Q: 装上插件后 DeepSeek Harness Desktop 起不来？**
 0.4.0 及更早的客户端 bundle 仍 `require('@deepseek-ai/dsh-client-runtime/client')`，而该包在 `dsh-client-store` 一代已被**整包删除**——桌面版的 web 引导是"任一 entry 激活失败即整体中止"，所以应用直接黑屏/打不开。0.5.0 已改用本代平台模块（`@deepseek-ai/dsh-client-store`）并适配收窄后的 `ui-theme` schema。
-已经装坏、界面进不去时：命令行执行 `dsh plugin --profile desktop remove dsh-yizi-themes`（不需要打开界面），再完全退出并重启桌面版即可恢复；然后升级到 0.5.0 重新安装。
+已经装坏、界面进不去时：命令行执行 `dsh plugin --profile desktop remove dsh-yizi-themes`（不需要打开界面），再完全退出并重启桌面版即可恢复；然后升级到 0.5.1 重新安装。
 
 **Q: 干净 Harness（官方源码 / npm 发布的 rc.5）能用吗？**
-0.5.0 面向 `dsh-client-store` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` 桌面版）；更老的 rc.5 / rc.8 请用 0.3.x。风格主题一直由插件自实现（`localStorage` 持久化 + 自行切换 `body.theme-<id>`），无需给核心打任何补丁；明暗切换仍走核心 `ctx.theme`。
+0.5.x 面向 `dsh-client-store` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` 桌面版）；更老的 rc.5 / rc.8 请用 0.3.x。风格主题一直由插件自实现（`localStorage` 持久化 + 自行切换 `body.theme-<id>`），无需给核心打任何补丁；明暗切换仍走核心 `ctx.theme`。
 
 **Q: 控制台报 `single slot "sidebar.brand.mark" already has a registration at priority 0`？**
 旧版本以默认 priority 0 注册品牌槽位，与标准构建自带的官方品牌插件（`dsh-client-ui-brand-official`）撞车——single 槽位不允许同优先级的第二个占用者（报错里的 "registered by X" 指的是**已存在的**那个）。0.5.0 起本插件以 `priority: -100` 注册（single 槽位渲染最低优先级者），两者共存且本插件品牌生效。
@@ -206,7 +207,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 0.3.x 起已适配。rc.8 把侧边栏品牌从单个 `BrandWordmark`（`viewBox="0 0 182 24"`）改成了官方品牌槽位（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`）。插件改为注册这些槽位来渲染自定义 Logo / 字样 / 徽章 / 新会话标题——槽位是官方扩展面，**后续 Harness 升级只要保留槽位契约即可继续工作**；无槽位的旧核心自动回退到原 viewBox 注入路径。升级后若仍显示旧版，请先 `remove` 再 `add`（同版本内容变了 pnpm 会报 "Already up to date"）。
 
 **Q: Harness 升级到 v0.1.2-alpha.1 后，插件启动报 `dsh-client-runtime` missed the module table？**
-官方在新版移除了 `@deepseek-ai/dsh-client-runtime` 包，旧版插件（0.3.x）仍引用它导致加载失败。**升级到 0.4.0 及以上（当前最新 0.5.0）**（已迁移到 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`）。若你已安装 0.3.x，先 `remove` 再 `add` 最新版，并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
+官方在新版移除了 `@deepseek-ai/dsh-client-runtime` 包，旧版插件（0.3.x）仍引用它导致加载失败。**升级到 0.4.0 及以上（当前最新 0.5.1）**（已迁移到 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`）。若你已安装 0.3.x，先 `remove` 再 `add` 最新版，并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
 
 **Q: 想让 agent 帮我装插件？**
 把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。

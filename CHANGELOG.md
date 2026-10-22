@@ -1,5 +1,46 @@
 # 版本日志 / Changelog
 
+## 0.5.1 — 2026-10-22
+
+> 适配 **DeepSeek Harness 0.2.1-rc.2**：只读兼容审计确认槽位 / 主题服务 / 模块表 / 设计令牌均未破坏（P0 无问题）；本版修复审计发现的 P1/P2 问题，并修好 Windows 桌面版新会话页浮动主题菜单的两处定位冲突。完整审计见 `docs/COMPAT-0.2.1-rc.2.md`。
+
+### 修复 1：新会话（hero）右上角主题菜单被窗口按钮遮挡
+
+- **现象**：会话内主题菜单正常挂在 `conversation.session.header.utilities` 槽位；但空白 / 新会话页的会话头被隐藏，插件改用的 fixed 浮层只有 `top:12px`，正好落在 Windows 桌面版 `titleBarOverlay` 的原生标题栏条带（40px）里，被最小化 / 最大化 / 关闭按钮压住且点击被窗口按钮吞掉。
+- **根因**：桌面版主窗口用 `titleBarOverlay`（`height: 40`）把原生 caption 叠在网页顶部；preload 在 `html` 上写 `data-windows-titlebar` 与 `--dsh-windows-titlebar-height: 40px`，框架据此下移内容，而插件浮层没有把这段 chrome 高度算进去。
+- **修复**：`src/client/FloatingControls.tsx` 的浮层改为 `top: calc(var(--dsh-windows-titlebar-height, 0px) + 12px)`，并对宿主加 `-webkit-app-region: no-drag`。变量只由桌面 preload 定义，因此纯 Web / macOS 仍保持原来的 12px 偏移，不受影响。
+
+### 修复 2：新会话浮动菜单与「打开侧边栏」按钮 / 展开后的右栏重叠
+
+- **现象**：浮层抬到 caption 之下后，与空白会话里仍然渲染的右栏展开按钮（`conversation.session.header.corner` 槽的唯一占用者，即右上角「打开侧边栏」）踩在同一块区域；把侧边栏展开后，展开按钮卸载（「shown 时不渲染」），浮层又遮住了右栏面板顶部的内容。
+- **根因①**：空白会话隐藏了标题行，但 `headerCorner` 座位照常渲染，按钮贴着内容区右缘（header 右内边距 28px + `margin-right:-16px`）；插件浮层固定在 `right:28px`，两者横向重叠。
+- **根因②**：右栏展开后 `[data-conversation-header-corner]` 座位变空，浮层回落到 28px；而右栏是贴右边界的绝对定位列（`[data-sidebar-right-open]`），于是浮层压在面板自己的顶部 chrome（折叠 / 全屏按钮）与内容上。展开只切换面板上的**属性**（无节点插入、面板宽度在折叠时已是最终值、内容靠 transform 滑入），`MutationObserver` 与 `ResizeObserver` 都不会察觉。
+- **修复**：浮层在每次 `sync()` 时把「右上角障碍物」统一量测——`[data-conversation-header-corner]` 座位（折叠时的展开按钮）与 `[data-sidebar-right-open]` 面板（展开时的右栏）取最左边界，把浮层 `right` 抬到该边界左侧 8px（无边界时 28px）。另加三个触发器：`window resize`、面板 `ResizeObserver`（拖拽改宽）、以及只监听 `data-sidebar-right-open` / `data-sidebar-right-panel` 两个属性的 `MutationObserver`（展开 / 折叠 / 全屏切换）。右栏全屏（宽度≈满屏）时没有可放位置，浮层自动隐藏；离开全屏或折叠后恢复。
+- **验证**：按 0.2.1 的 header / 右栏几何模拟（1500px 视口）：修复前浮层右缘 1876 > 座位左缘 1864（重叠）；修复后右缘 1856、间隙 8px。展开（仅属性变化）→ 右缘 448（面板左 1060）；拖宽到 640px → 右缘 648；全屏 → 隐藏；折叠 → 回到 48；hero 消失后即使面板改宽也保持隐藏。
+
+### 修复 3（P1）：自定义「新会话标题」会删掉核心 hero 的「预览」徽章
+
+- **现象**：0.2.1 把 hero 标题文本与 `preview` 徽章包进同一个 `span.titleGroup`（`span: 标题文本` + `span.previewBadge: 预览`）。插件旧的 DOM 写入把整个 titleGroup 当标题节点，`textContent = 自定义标题` 会**删掉徽章**；恢复默认标题时又把拼接文本「探索未至之境预览」写回去，徽章永久消失直到 React 重新渲染。
+- **修复**：`src/client/brand-apply.ts` 新增 `headlineTextTarget()`：当兄弟节点是分组容器时，下钻到其首个元素子节点（标题 span）再写 `textContent`；旧版「兄弟即标题 span」结构原样返回。浏览器内结构模拟：新版结构改标题后徽章仍在、恢复后标题与徽章都正确；旧结构行为不变。
+
+### 修复 4（P2）：hero 槽位不再顶掉官方悬停摆尾动画
+
+- **现象**：single 槽一旦有人注册就占住座位（渲染 null 也不会回落到 fallback）；插件在默认（未设自定义 logo）时也注册 `conversation.hero.brand.mark`，于是 0.2.1 新加的 hover 动画鱼被替换成静态鱼。
+- **修复**：`src/client/brand-slots.tsx` 的 hero 座位改为跟随 `brandStore` **动态注册/注销**——只有设置了自定义 logo 才占座，否则把座位还给核心动画 fallback；侧边栏两个品牌座位保持常驻（插件默认品牌字样依赖它们）。
+
+### 修复 5（P2）：0.2.1 失效选择器与未覆盖的设计令牌
+
+- **失效选择器**：`[data-chat-flow=""] [role="status"][aria-live="polite"]`（0.2.1 的 `role=status` 已不再带 `aria-live`，运行态文字改用 `TextShimmer` 原语）与 `[data-state="ongoing"]{--dsh-state-ongoing:…}`（该变量在 0.2.1 未定义）已删除。
+- **令牌补齐**：`brand-overrides.css` 新增一段 `body[class*="theme-"]` 别名映射，把 0.2.1 新增/常用的 `--dsw-alias-label-shimmer`、`--dsw-alias-label-deep-diving(-shimmer)`、`--dsw-alias-settings-card-fill/-stroke`、`--dsw-alias-menu-icon`、`--dsw-alias-turn-trigger-bg(-hover)`、`--dsw-alias-switch-thumb`、`--dsw-alias-toast-label` 从各主题已有的令牌派生出来（`var()`/`color-mix` 引用），19 套主题自动生效；`default` 主题不挂 class，保持核心原值。`bg-mask-*` / `file-diff-*` 属中性遮罩与语义色，刻意不主题化。
+- **SVG 指纹选择器**：`span:has(> svg[…])` / `button:has(> svg[…])` 放松为后代 `:has(svg[…])`，槽位包裹层（`div[data-slot][display:contents]`）存在时仍能命中核心 fallback 品牌图形。
+
+### 修复 6（P2）：品牌重绘节流与主题 class 清理收敛
+
+- `src/client/index.ts` 的 `MutationObserver` 不再每次 DOM 变更都执行整轮 `applyBrand` + `themeBackend.reassert()` + 浮动条 `sync()`：改为 `requestAnimationFrame` 合并到每帧一次（文本替换仍逐条即时处理），流式输出时显著降负；dispose 时取消挂起的帧。
+- `src/client/theme-backend.ts` 不再删除 body 上所有 `theme-*` class，只清理插件自己 19 个主题 id 对应的 class，避免误删第三方同名 class。
+
+---
+
 ## 0.5.0 — 2026-10-12
 
 > 适配 **DeepSeek Harness 0.2.0-rc.2**（`dsh-client-store` / `configForms` 一代；桌面版 `@deepseek-ai/dsh-desktop 0.2.0-rc.2`）。

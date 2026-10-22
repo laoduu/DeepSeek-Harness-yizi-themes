@@ -109,10 +109,22 @@ function observeBrandReplacement(
   getMappings: () => CustomBrandConfig['mappings'],
   apply?: () => void,
 ): () => void {
+  // DOM mutations arrive in bursts (streaming tokens, React commits), and the
+  // brand re-apply is idempotent — so coalesce it to one call per frame
+  // instead of one per mutation. Per-node TEXT replacement stays immediate so
+  // streamed output is rewritten as it lands.
+  let frame = 0
+  const scheduleApply = (): void => {
+    if (apply === undefined || frame !== 0) return
+    frame = requestAnimationFrame(() => {
+      frame = 0
+      apply()
+    })
+  }
   const observer = new MutationObserver((mutations) => {
     // Re-apply the DOM brand (sidebar / hero) whenever the tree changes —
     // idempotent, so React remounts converge back to the custom brand.
-    apply?.()
+    scheduleApply()
     const mappings = getMappings()
     if (!mappings.enabled) return
     for (const mutation of mutations) {
@@ -125,7 +137,13 @@ function observeBrandReplacement(
     }
   })
   observer.observe(document.body, { childList: true, subtree: true, characterData: true })
-  return () => observer.disconnect()
+  return () => {
+    observer.disconnect()
+    if (frame !== 0) {
+      cancelAnimationFrame(frame)
+      frame = 0
+    }
+  }
 }
 
 /** Build the AppearanceRow's injected face from core ctx + plugin settings. */

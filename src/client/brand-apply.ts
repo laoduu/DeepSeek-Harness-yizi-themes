@@ -221,12 +221,14 @@ function locateHeroHeadline(): HTMLElement | null {
     const anchor = mine.parentElement
     const hitbox = anchor?.parentElement
     const sibling = hitbox?.nextElementSibling
-    if (sibling instanceof HTMLElement && (sibling.textContent ?? '').trim() !== '') return sibling
+    if (sibling instanceof HTMLElement && (sibling.textContent ?? '').trim() !== '')
+      return headlineTextTarget(sibling)
     // Structural safety: scan upward for the first element with a text sibling.
     let node: Element | null = mine
     for (let i = 0; i < 4 && node !== null; i++) {
       const sib = node.nextElementSibling
-      if (sib instanceof HTMLElement && (sib.textContent ?? '').trim() !== '') return sib
+      if (sib instanceof HTMLElement && (sib.textContent ?? '').trim() !== '')
+        return headlineTextTarget(sib)
       node = node.parentElement
     }
     return null
@@ -234,7 +236,22 @@ function locateHeroHeadline(): HTMLElement | null {
   const fish = document.querySelector(HERO_SELECTOR)
   const hitbox = fish?.parentElement
   const sibling = hitbox?.nextElementSibling
-  return sibling instanceof HTMLElement ? sibling : null
+  return sibling instanceof HTMLElement ? headlineTextTarget(sibling) : null
+}
+
+/**
+ * Resolve the element that holds ONLY the headline text.
+ *
+ * Harness 0.2.1 wraps the headline text and the `preview` badge in one
+ * `titleGroup` span whose first child is the headline. Writing the group's
+ * `textContent` would delete the badge — and restoring the saved text would
+ * bake the concatenated "headline + badge" string into it. Descend to that
+ * first child; a legacy sibling that already is the bare headline span has no
+ * element children and passes through unchanged.
+ */
+function headlineTextTarget(group: HTMLElement): HTMLElement {
+  const first = group.firstElementChild
+  return first instanceof HTMLElement ? first : group
 }
 
 /** Apply the hero headline text (the one brand piece with no slot on any path). */

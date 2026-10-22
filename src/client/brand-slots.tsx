@@ -12,11 +12,13 @@
  * user edits the brand in the settings row.
  *
  * Because a registered single slot OCCUPIES its seat (rendering null does not
- * fall through to the shell's fallback), the mark occupants render the fish
- * themselves when no custom logo is set — preserving the exact default — and
+ * fall through to the shell's fallback), the sidebar mark occupant renders the
+ * fish itself when no custom logo is set — preserving the exact default — and
  * the name occupant always renders the wordmark + badge (the plugin's default
  * brand, restoring the pre-rc.8 official look that the standard build replaces
- * with a dev placeholder).
+ * with a dev placeholder). The HERO seat is the exception: it is registered
+ * only while a custom logo exists, so the official hover-animated fish keeps
+ * its seat otherwise.
  */
 import React, { useSyncExternalStore } from 'react'
 import { brandStore, markModernBrandPath } from './brand-store.ts'
@@ -140,6 +142,12 @@ export function YiziHeroMark({ size, className }: { size: number; className?: st
  * `slots.inject` runs its callback synchronously when the slot is already
  * declared (rc.8+) or when it is declared later (older cores never declare
  * them, so the callback never runs and the legacy DOM path stays active).
+ *
+ * The HERO seat is registered only while a custom logo is set. A registered
+ * single slot OCCUPIES its seat — the shell renders its own fallback only when
+ * the slot has no entry — so leaving ours registered with an empty logo would
+ * permanently replace the official hover-animated fish with a static copy.
+ * It therefore follows `brandStore` and leaves the seat alone otherwise.
  */
 export function registerBrandSlots(slots: BrandSlots): () => void {
   let activated = false
@@ -162,7 +170,27 @@ export function registerBrandSlots(slots: BrandSlots): () => void {
   }))
   disposers.push(slots.inject('conversation.hero.brand.mark', () => {
     activate()
-    return slots.register({ name: 'conversation.hero.brand.mark', priority: BRAND_SLOT_PRIORITY }, YiziHeroMark)
+    let disposeHero: (() => void) | null = null
+    const syncHero = (logo: string): void => {
+      if (logo !== '') {
+        if (disposeHero === null) {
+          disposeHero = slots.register(
+            { name: 'conversation.hero.brand.mark', priority: BRAND_SLOT_PRIORITY },
+            YiziHeroMark,
+          )
+        }
+      } else if (disposeHero !== null) {
+        disposeHero()
+        disposeHero = null
+      }
+    }
+    syncHero(brandStore.getSnapshot().logo)
+    const unsubscribe = brandStore.subscribe(() => syncHero(brandStore.getSnapshot().logo))
+    return () => {
+      unsubscribe()
+      disposeHero?.()
+      disposeHero = null
+    }
   }))
   return () => {
     for (const dispose of disposers) dispose()

@@ -8,7 +8,7 @@
  * stable seam — the same one the style-theme id already uses — and it survives
  * Harness reorganizations of the settings API.
  */
-import { DEFAULT_CUSTOM_BRAND, type CustomBrandConfig } from './theme-settings.ts'
+import { DEFAULT_CUSTOM_BRAND, clampBrandScale, type CustomBrandConfig } from './theme-settings.ts'
 
 /** localStorage key holding the persisted custom brand document. */
 export const BRAND_STORAGE_KEY = 'dsh-yizi-themes:brand'
@@ -52,6 +52,7 @@ export function normalizeBrand(raw: unknown): CustomBrandConfig {
     wordmark: asString(source.wordmark, defaults.wordmark),
     wordmarkBadge: asString(source.wordmarkBadge, defaults.wordmarkBadge),
     headline: asString(source.headline, defaults.headline),
+    scale: source.scale === undefined ? defaults.scale : clampBrandScale(source.scale),
     mappings: {
       enabled: asBoolean(mappings.enabled, defaults.mappings.enabled),
       deepseek: asString(mappings.deepseek, defaults.mappings.deepseek),

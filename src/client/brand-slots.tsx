@@ -80,22 +80,30 @@ function BrandMarkup({ markup, size }: { markup: string; size: number }): React.
 /** `sidebar.brand.mark` occupant: custom logo, or the fish when unset. */
 export function YiziBrandMark({ size }: { size: number }): React.ReactElement {
   const custom = useSyncExternalStore(brandStore.subscribe, brandStore.getSnapshot)
+  // The host requests its fixed 24px edge; the user's overall brand scale
+  // multiplies it (the official contract hands the occupant a REQUESTED size,
+  // not a mandated one, and the sidebar row leaves ~44px of vertical room).
+  const px = Math.round(size * custom.scale)
   if (custom.logo !== '') {
-    return React.createElement(BrandMarkup, { markup: custom.logo, size })
+    return React.createElement(BrandMarkup, { markup: custom.logo, size: px })
   }
   return React.createElement('span', { 'data-yizi-logo': 'mark', style: BRAND_COLOR },
-    FishLogo !== undefined ? React.createElement(FishLogo, { size }) : null)
+    FishLogo !== undefined ? React.createElement(FishLogo, { size: px }) : null)
 }
 
 /** `sidebar.brand.name` occupant: wordmark + badge cluster. */
 export function YiziBrandName(): React.ReactElement {
   const custom = useSyncExternalStore(brandStore.subscribe, brandStore.getSnapshot)
+  // The name slot's official contract states the occupant owns its content
+  // width, so scaling the font metrics here is fully within the seam. Metrics
+  // ride the same brand scale as the mark so the cluster stays proportional.
+  const k = custom.scale
   const children: React.ReactNode[] = [
     React.createElement('span', {
       key: 'wm',
       style: {
-        fontSize: 18, fontWeight: 600, letterSpacing: '.02em',
-        lineHeight: '24px', whiteSpace: 'nowrap',
+        fontSize: Math.round(18 * k), fontWeight: 600, letterSpacing: '.02em',
+        lineHeight: `${Math.round(24 * k)}px`, whiteSpace: 'nowrap',
         color: 'var(--dsw-alias-brand-primary)',
       },
     }, custom.wordmark),
@@ -104,7 +112,10 @@ export function YiziBrandName(): React.ReactElement {
     children.push(React.createElement('span', {
       key: 'badge',
       style: {
-        fontSize: 10, lineHeight: '14px', padding: '0 5px', borderRadius: 3,
+        fontSize: Math.max(8, Math.round(10 * k)),
+        lineHeight: `${Math.max(11, Math.round(14 * k))}px`,
+        padding: `0 ${Math.max(4, Math.round(5 * k))}px`,
+        borderRadius: Math.max(2, Math.round(3 * k)),
         background: 'var(--dsw-alias-brand-primary)',
         color: 'var(--dsw-alias-label-primary-inverted)',
         letterSpacing: '.08em', whiteSpace: 'nowrap',
@@ -114,7 +125,8 @@ export function YiziBrandName(): React.ReactElement {
   return React.createElement('span', {
     'data-yizi-brand-name': '1',
     style: {
-      display: 'inline-flex', alignItems: 'center', gap: 6,
+      display: 'inline-flex', alignItems: 'center',
+      gap: `${Math.max(3, Math.round(6 * k))}px`,
       maxWidth: '100%', overflow: 'hidden',
     },
   }, ...children)
@@ -127,9 +139,10 @@ export function YiziHeroMark({ size, className }: { size: number; className?: st
   // headline DOM pass locates the hero text as this element's sibling chain,
   // so it never depends on hashed core class names. `className` (the shell's
   // hero mark class) rides the wrapper so hover motion still applies.
+  const px = Math.round(size * custom.scale)
   const inner = custom.logo !== ''
-    ? React.createElement(BrandMarkup, { markup: custom.logo, size })
-    : (FishLogo !== undefined ? React.createElement(FishLogo, { size, className: undefined }) : null)
+    ? React.createElement(BrandMarkup, { markup: custom.logo, size: px })
+    : (FishLogo !== undefined ? React.createElement(FishLogo, { size: px, className: undefined }) : null)
   return React.createElement('span', {
     'data-yizi-hero-mark': '1',
     className,

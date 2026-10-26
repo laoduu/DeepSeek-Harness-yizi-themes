@@ -167,3 +167,45 @@ button:has(svg[viewBox="0 0 23.16 17.04"][width="24"]) {
   display: inline-block;
   vertical-align: middle;
 }
+
+/* ── Brand scale headroom (0.5.4) ──────────────────────────────────────────
+   The 品牌尺寸 scale renders the slot occupants LARGER than the host-requested
+   24px, but the core pins the surrounding geometry: the sidebar band
+   (.logoRow) is a fixed 60px (36px rail) with overflow hidden, the brand
+   identity/name boxes are fixed 24px, and the brand button clips its 24px
+   content box — so a scaled brand gets cut off at the bottom. Relax exactly
+   those boxes (height → content, clipping off), anchored on the plugin's OWN
+   [data-yizi-*] hooks — the same stable-DOM-hook, last-sheet-wins policy as
+   every other rule here. Rhythm is preserved: the band keeps a min-height
+   floor and only grows when its content actually does. */
+
+/* Brand button: stop clipping the grown identity box. */
+button:has([data-yizi-brand-name]) {
+  overflow: visible;
+}
+
+/* Brand-name box (direct parent of our name occupant; core pins 24px). */
+*:has(> [data-yizi-brand-name]) {
+  height: auto;
+}
+
+/* Brand-identity box (direct grandparent; core pins 24px). */
+*:has(> *:has(> [data-yizi-brand-name])) {
+  height: auto;
+}
+
+/* Sidebar band: the wide band anchors on the brand button (it carries both
+   occupants), the collapsed rail band on the toggle button's mark. Declared
+   rail-first so the wide min-height re-asserts last (equal specificity,
+   source order wins); the rail's core `.collapsed .logoRow` (0,2,0) keeps
+   its 36px height, but our overflow: visible outranks the base rule and
+   already stops the clipping there. */
+div:has(> button:has([data-yizi-logo])) {
+  height: auto;
+  min-height: 36px;
+  overflow: visible;
+}
+
+div:has(> button:has([data-yizi-brand-name])) {
+  min-height: 60px;
+}

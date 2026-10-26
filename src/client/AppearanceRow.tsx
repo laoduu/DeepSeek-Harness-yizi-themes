@@ -6,7 +6,7 @@
  * this row starts straight at the theme grid.
  */
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import { DEFAULT_THEME } from './theme-settings.ts'
+import { BRAND_SCALE_MAX, BRAND_SCALE_MIN, DEFAULT_THEME, clampBrandScale } from './theme-settings.ts'
 import type { CustomBrandConfig } from './theme-settings.ts'
 import type { ThemeKey } from './locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
@@ -169,6 +169,25 @@ export function AppearanceRow({ t, setThemeId, setCustomBrand, useStore }: Appea
               placeholder={t('appearance.custom.headline.placeholder')}
               onChange={(e) => { update({ headline: e.target.value }) }}
             />
+          </div>
+        </div>
+        <div className="dsw-yizi-field-row">
+          <label className="dsw-yizi-field-label" htmlFor="custom-scale">{t('appearance.custom.scale')}</label>
+          <div className="dsw-yizi-field-input">
+            <div className="dsw-yizi-scale-row">
+              <input
+                id="custom-scale"
+                className="dsw-yizi-range"
+                type="range"
+                min={BRAND_SCALE_MIN * 100}
+                max={BRAND_SCALE_MAX * 100}
+                step={5}
+                value={Math.round(customBrand.scale * 100)}
+                onChange={(e) => { update({ scale: clampBrandScale(Number(e.target.value) / 100) }) }}
+              />
+              <span className="dsw-yizi-scale-value">{Math.round(customBrand.scale * 100)}%</span>
+            </div>
+            <p className="dsw-yizi-field-hint-subtle">{t('appearance.custom.scale.hint')}</p>
           </div>
         </div>
         <div className="dsw-yizi-divider" />

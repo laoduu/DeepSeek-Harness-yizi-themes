@@ -189,6 +189,30 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   accent-color: var(--dsw-alias-brand-primary);
 }
 
+/* Brand-scale slider row: range on the left, live percentage readout right. */
+.dsw-yizi-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dsw-yizi-range {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--dsw-alias-brand-primary);
+  cursor: pointer;
+}
+
+.dsw-yizi-scale-value {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary);
+}
+
 .dsw-yizi-mapping-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

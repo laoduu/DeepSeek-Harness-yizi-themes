@@ -39,7 +39,7 @@ export function createAppearanceRowStore(): EngineStoreHandle<AppearanceRowState
       themes: [],
       customBrand: {
         logo: '', wordmark: 'DEEPSEEK', wordmarkBadge: 'HARNESS',
-        headline: '探索未至之境',
+        headline: '探索未至之境', scale: 1,
         mappings: {
           enabled: false, deepseek: 'DeepSeek', deepseekChinese: '深度求索',
           harness: 'Harness', deepseekHarness: 'DeepSeek Harness',

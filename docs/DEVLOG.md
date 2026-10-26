@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-10-26 · v0.5.2：0.2.1-rc.3 兼容确认 + 全量令牌覆盖审计
+
+### 「深度求索中，用时…」没主题化？先查装的版本
+
+用户反馈运行态文字仍是官方蓝。第一嫌疑是 0.5.1 的别名映射没打通，实际一查应用内安装目录（`~/.dsh/profiles/desktop/node_modules/dsh-yizi-themes`），**装的还是 0.5.0**（dist 构建 10/13）——0.5.1 修的映射根本不在跑的代码里。教训：**排查"没生效"先对比"仓库源码 vs 应用内 dist"**，别先怀疑映射链。
+
+映射链本身核对无误：`.running` 在元素级把 `--dsw-alias-label-shimmer` 重指到 `--dsw-alias-label-deep-diving-shimmer`，但那是**转指**不是阻断——body 上的插件映射沿继承链仍可达；`TextShimmer` 的底色走 `--dsw-alias-label-deep-diving`，高光走 shimmer 色，0.5.1 三个都映射了。
+
+### 全量令牌审计：381 个 var() 引用求差集
+
+这次不做"抽查"，把 rc.3 全部客户端 CSS 的 `var(--…)` 引用（381 个）与插件定义的变量（84 个）求差集，剔掉指标类（radius/font/shadow）和核心内部推导项后逐个映射 UI 表面。真发现：
+
+- **`--dsw-alias-link` 从没被任何主题覆盖**——链接一直是官方蓝（6 个包在用）。
+- **`--dsw-static-deepseek-400/450/500` 被组件绕过 alias 直接消费**（Toast 动作、FileTypeIcon 默认墨色）。在 body 级重映射 static 反而是干净解法：static 只被 DeepSeek 蓝系消费，ANSI/语义色用的是独立的 `blue-*`/`neutral-*` 色阶，不会误伤。
+- **一批"声明未定义"令牌**（`bg-l1/l2`、`bg-layer-4`、`fill-*`、`label-quaternary`、`separator-primary`）：核心消费但全仓无定义，渲染成透明/neutral fallback——给它们映射到主题层级是"上色"而不是"改色"，观感从"破"到"齐"。
+- **元素级钉死的三处**（ContextMeter 分段 tints、HoverCard 底、TrajectoryTable 渐变）：body 值够不着；HoverCard/Trajectory 无稳定钩子维持不覆盖，ContextMeter 用 CSS-module 哈希保留源类名的特性 `[class*="colorMessages"]` 补上。
+- **抓到自己 0.5.1 的映射 bug**：`toast-label` 派生自 `label-primary-inverted`，但 Toast 表面两种模式都是深色（核心注释明说 always-dark），该令牌暗色下是深灰 → 暗色 Toast 文字对比度约 2:1。改回核心同语义的恒亮白。
+
+### 桌面版 CLI 的坑：host-commands 里的 dsh.cmd 是陈旧安装路径
+
+`%APPDATA%\DSH Desktop\host-commands\desktop\bin\dsh.cmd` 硬编码 `D:\Program Files\DSH Desktop\...`（旧安装位置），直接调用报"找不到路径"。当前版的正确启动器在 `resources\runtime\cli\bin\dsh.cmd`：`ELECTRON_RUN_AS_NODE=1` + `<exe> --expose-internals resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js`。注意 stale 那份指向的 `app.asar\lib\desktop-cli.js` 在本代已不存在（CLI 挪进了 `dsh-desktop-host` 包）。
+
+---
+
 ## 2026-10-22 · v0.5.1：适配 0.2.1-rc.2 + 新会话浮动菜单定位
 
 ### 新会话页：浮层与「打开侧边栏」按钮重叠

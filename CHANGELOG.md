@@ -1,5 +1,39 @@
 # 版本日志 / Changelog
 
+## 0.5.2 — 2026-10-26
+
+> 主题覆盖面补全（对照 **DeepSeek Harness 0.2.1-rc.3** 全量 CSS 变量审计）；并确认对 0.2.1-rc.3 桌面版完美适配（rc.2 → rc.3 仅有新增，无破坏性变更）。完整审计见 `docs/COMPAT-0.2.1-rc.3.md`。
+
+### 兼容性：0.2.1-rc.3 审计结论（P0 无问题，无需改动）
+
+- rc.3 相对 rc.2 仅 6 个提交：导航条目自定义（新增 `sidebar.panellist.actions` / `conversation.session.header.views.actions` / `sidebar.right.tab.guide.actions` 三个纯新增 list 槽 + More 菜单）、导航 pins/菜单图标修复、导航埋点、LLM `/models` 列表。
+- 本插件运行时依赖包（`dsh-client-store` / `-ui-primitives` / `-ui-theme` / `-ui-slots` / `-locale` / `-ui-settings` / react 18.3.1）**仅版本号变动，零代码改动**；`icons` 导出只增不减（新增 `IconAppsAddOutline*`）；hero DOM（`EmptyHero`/`HeroShell`）、侧边栏品牌区、右栏 `data-sidebar-right-open/panel`、`data-conversation-header-corner`、`--dsh-windows-titlebar-height` 全部未变。
+- 0.5.1 已把运行态文字（「深度求索中，用时…」→ `RunningStatus` + `TextShimmer`）的 `--dsw-alias-label-deep-diving(-shimmer)` / `--dsw-alias-label-shimmer` 全部映射，rc.3 下直接生效；若升级后仍见官方蓝，请确认应用内安装的插件版本 ≥ 0.5.1（`~/.dsh/profiles/desktop/node_modules/dsh-yizi-themes`）。
+
+### 补全 1（P1）：全量令牌审计发现的品牌蓝残留
+
+- **方法**：提取 rc.3 全部客户端 CSS 的 381 个 `var(--…)` 引用，与本插件定义的 84 个变量求差集，剔除非色彩指标与核心内部推导项，逐项映射到 UI 表面。
+- **`--dsw-alias-link`**（核心 = 静态 DeepSeek 蓝）：workspace / workflow-run / deliverables / 插件市场 / web-search 设置 / primitives 的全部超链接 → 现映射到 `--dsw-alias-brand-primary`。
+- **`--dsw-static-deepseek-400/450/500`** 被组件**直接**消费：Toast 动作按钮文字、FileTypeIcon 默认文件图标墨色 → 在 body 级重映射到主题品牌色（连带让核心所有基于它们的 `color-mix` 派生自动跟随主题）。ANSI 终端色 / 语义状态色用的是独立的 `blue-*` / `neutral-*` 色阶，不受影响。
+- **菜单/浮层表面**：`--dsw-menu-surface-fill`（核心钉死 rgba(248,249,250,.58)/rgba(67,69,74,.45) 毛玻璃）、`--dsw-alias-menu-group-header-fill`（分组标题条）、`--dsw-alias-tooltip-key-bg`（tooltip 键位提示底）、`--dsw-alias-button-tool-bar-fill/-hover`（聊天消息悬停工具条，核心钉死 rgba(84,85,87,…)）→ 全部从主题 bg 层 / label 层派生。
+- **文档预览面板**：`--dsw-alias-bg-document-preview` / `-bg-document-selection` / `-label-document-preview`（核心钉死静态 neutral-bluish + blue-500 选区）→ 主题 bg 层 + 品牌色选区。
+- **Onboarding 引导向导**：`--dsw-alias-onboarding-accent`（核心钉死 #3964fe）等四项 → 主题品牌色与 bg 层（三组渐变 stops 为一次性首屏视觉，暂保持核心值）。
+
+### 补全 2（P2）：状态/语义与「声明未定义」令牌
+
+- 状态语义补齐：`--dsw-alias-state-warn-label`（amber-600 → 主题 warn 色）、`--dsw-alias-state-idle-primary`（StateDot 空闲点 → 主题 dimmed）、`--dsw-alias-label-error`、`--dsw-alias-interactive-bg-hover-danger`（危险 hover，亮 8% / 暗 15% 两档）。
+- 填充面文字：`--dsw-alias-label-primary-foreground` / `--dsw-alias-label-primary-inverted`（主按钮填充、附件 chip、BrandWordmark 上的文字）→ 各主题自带的 `--dsw-alias-brand-primary-invert` 配对墨色；`--dsw-alias-border-inverted` 亮色保持透明、暗色取 label 8%。
+- 核心声明未定义（前向声明）令牌：`--dsw-alias-bg-l1/l2`、`--dsw-alias-bg-layer-4`、`--dsw-alias-fill-l1/l2/tertiary/tsp-secondary`、`--dsw-alias-label-quaternary`、`--dsw-alias-separator-primary` → 映射到主题既有层级，终端侧栏、任务列表、子代理设置表单、附件卡片获得主题分层（核心此处原本渲染透明/中性 fallback）。
+- **ContextMeter「消息」类分段**：`--meter-tint` 在元素级钉死 `--dsw-static-blue-450`，body 级映射不可达；新增 `body[class*="theme-"] [class*="colorMessages"]` 哈希后缀钩子改指主题品牌色（system 灰 / tools 紫保持语义色）。
+- 刻意不覆盖（维持 0.5.1 结论）：`bg-mask-*` 遮罩、ANSI 终端色、`file-diff-*`、TrajectoryTable 蓝渐变（无稳定钩子）、HoverCard 预览底（元素级本地定义 `#2C2C2E`，无稳定钩子）、启动屏 `--dsh-boot-*`（核心首屏注入，插件晚于首屏加载，不可行）。
+
+### 修复：暗色模式下 Toast 文字对比度（0.5.1 映射 bug）
+
+- 0.5.1 把 `--dsw-alias-toast-label` 派生自 `--dsw-alias-label-primary-inverted`；但 Toast 表面**两种模式下都是深色**（核心注释：always-dark toast surface），而该令牌在暗色下解析为深灰（neutral-bluish-800）→ 暗色 Toast 文字对比度仅约 2:1。
+- 本版改为核心同语义的恒亮白 `var(--dsw-static-neutral-bluish-00)`（核心 `toast-label` 两种模式均为 white）。
+
+---
+
 ## 0.5.1 — 2026-10-22
 
 > 适配 **DeepSeek Harness 0.2.1-rc.2**：只读兼容审计确认槽位 / 主题服务 / 模块表 / 设计令牌均未破坏（P0 无问题）；本版修复审计发现的 P1/P2 问题，并修好 Windows 桌面版新会话页浮动主题菜单的两处定位冲突。完整审计见 `docs/COMPAT-0.2.1-rc.2.md`。

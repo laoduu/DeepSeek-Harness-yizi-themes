@@ -22,7 +22,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
 - ✅ **Works on stock Harness out of the box**: style themes are implemented by the plugin itself (persistence + `body.theme-<id>` application) — no core patch needed
 - 🧩 **Upgrade-proof (official slots)**: branding (top-left logo / wordmark / badge / new-session headline) renders through Harness's official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`), registered at a lower `priority` so it coexists with — and wins over — the stock official brand plugin; cores without the slots fall back to the old viewBox injection path automatically
-- 🧱 **Current-generation support (0.5.1)**: targets the `dsh-client-store` / `configForms` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` / `0.2.1-rc.2` desktop apps); custom branding persists in browser-local storage (`localStorage`) and needs no Harness settings transport
+- 🧱 **Current-generation support (0.5.2)**: targets the `dsh-client-store` / `configForms` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` / `0.2.1-rc.2` / `0.2.1-rc.3` desktop apps); custom branding persists in browser-local storage (`localStorage`) and needs no Harness settings transport
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
 - 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
@@ -60,22 +60,22 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ## 📦 Installation
 
-> **Prerequisite**: Harness **≥ v0.1.2-alpha.1** (the `dsh-client-store` generation, including the 0.2.0-rc.2 / 0.2.1-rc.2 desktop apps).
+> **Prerequisite**: Harness **≥ v0.1.2-alpha.1** (the `dsh-client-store` generation, including the 0.2.0-rc.2 / 0.2.1-rc.2 / 0.2.1-rc.3 desktop apps).
 > For older rc.5 / rc.8 cores (client runtime still `@deepseek-ai/dsh-client-runtime`), use the 0.3.x line.
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.5.1.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.5.2.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.1.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.1/dsh-yizi-themes-0.5.1.tgz```
+curl -L -o dsh-yizi-themes-0.5.2.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.2/dsh-yizi-themes-0.5.2.tgz```
 
 2. Stop the running `dsh web` (Ctrl+C);
 3. Install:
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.1.tgz```
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.2.tgz```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
 > and the web profile are separate profiles (`$DSH_HOME/profiles/<desktop|web>`),
@@ -190,7 +190,7 @@ Old bug — upgrade to 0.2.2+.
 
 **Q: DeepSeek Harness Desktop won't start after installing the plugin?**
 Versions ≤ 0.4.0 still `require`d `@deepseek-ai/dsh-client-runtime/client`, and that package was **deleted** in the `dsh-client-store` generation. The desktop web bootstrap is all-or-nothing — one entry failing to activate aborts the whole client boot — so the app blank-screens. 0.5.0 moves to the current platform module (`@deepseek-ai/dsh-client-store`) and adapts to the narrowed `ui-theme` schema.
-If it is already broken and the UI won't open: run `dsh plugin --profile desktop remove dsh-yizi-themes` from a terminal (no GUI needed), fully quit and restart the desktop app, then install 0.5.1.
+If it is already broken and the UI won't open: run `dsh plugin --profile desktop remove dsh-yizi-themes` from a terminal (no GUI needed), fully quit and restart the desktop app, then install 0.5.2.
 
 **Q: Does it work on stock Harness (official source / npm-published rc.5)?**
 0.5.x targets the `dsh-client-store` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` / `0.2.1-rc.2` desktop apps); older rc.5 / rc.8 cores should use 0.3.x. Style themes have always been implemented by the plugin itself (`localStorage` + `body.theme-<id>`), so no core patch is needed; light/dark still goes through the core `ctx.theme`.
@@ -202,7 +202,7 @@ Older builds registered the brand slots at the default priority 0, colliding wit
 Adapted since 0.3.x (starting 0.3.0). rc.8 replaced the sidebar's single `BrandWordmark` (`viewBox="0 0 182 24"`) with official brand slots (`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`). The plugin registers those slots to render the custom logo / wordmark / badge / new-session headline — the slots are the official extension surface, so **future Harness upgrades keep working as long as the slot contract survives**; cores without the slots fall back to the old viewBox injection path automatically. If a same-version reinstall is ignored ("Already up to date"), `remove` then `add`.
 
 **Q: After upgrading Harness to v0.1.2-alpha.1 the plugin fails with `dsh-client-runtime` missed the module table?**
-New Harness builds removed the `@deepseek-ai/dsh-client-runtime` package, which the old plugin (0.3.x) still references — hence the load failure. **Upgrade to 0.4.0 or later (latest is 0.5.1)** (migrated to `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`). If you have 0.3.x installed, `remove` first, then `add` the latest release, fully restart `dsh web` (Ctrl+C) and hard-refresh the browser (Ctrl+Shift+R).
+New Harness builds removed the `@deepseek-ai/dsh-client-runtime` package, which the old plugin (0.3.x) still references — hence the load failure. **Upgrade to 0.4.0 or later (latest is 0.5.2)** (migrated to `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`). If you have 0.3.x installed, `remove` first, then `add` the latest release, fully restart `dsh web` (Ctrl+C) and hard-refresh the browser (Ctrl+Shift+R).
 
 **Q: Want an agent to install it for you?**
 Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.

@@ -7,7 +7,7 @@
 ### 新增：Theme Studio（自定义主题编辑器）
 
 - **入口**：设置 → 外观 → 自定义主题。三个输入：**主题色**（accent）+ 亮色底 + 暗色底（默认从主题色自动派生，可手动覆盖，移动主题色时未手改的底色跟随）；实时迷你 mock 预览；保存后出现在主题网格、右上角/浮动选择器、`/theme` 命令三处，持久化在 localStorage（`dsh-yizi-themes:customThemes`）。
-- **派生引擎**（`custom-themes.ts`）：从 accent + 底色按 19 套内置主题的配色关系推导整套 62 变量 × 2 模式的 `--dsw-alias-*` 覆盖块（比例经 `academic` 表反推验证：暗色品牌 = accent + 42% 白 = academic 的 #5a7ce3 逐位一致；亮暗层阶梯、边框 alpha 阶、滚动条/浮层同理）。产出 `body.theme-custom-<id>` + `[data-ds-dark-theme]` 伴块——与内置 sheet 同构，brand-overrides 的别名级联自动补全其余推导令牌。
+- **派生引擎**（`custom-themes.ts`，OKLCH 感知色彩空间）：从 accent + 底色**按角色**推导整套 62 变量 × 2 模式的 `--dsw-alias-*` 覆盖块——表面层只承色相不带饱和（chroma ≤0.035，永不出腻粉底）、文字亮度阶梯与 accent 鲜艳度解耦（霓虹 accent 也出沉静可读的次级文字）、品牌色明度钳制（亮色 0.40–0.62 / 暗色 0.62–0.85，粉黄霓虹自动压深、深色自动提亮）、语义色固定感知色相不随品牌漂移。与内置 `academic` 表数值对照验证：#002fa7 → 暗色品牌 #487ff4 / 次级文字 #5e7fc0 / layer-2 #eff4ff，均与手调值同族。产出 `body.theme-custom-<id>` + `[data-ds-dark-theme]` 伴块——与内置 sheet 同构，brand-overrides 的别名级联自动补全其余推导令牌。
 - **接线**：`themes-store.ts` 统一注册表（内置 + 自定义，缓存快照供 `useSyncExternalStore`）；主题后端的 body-class 清理扩展 `theme-custom-*` 前缀；核心路径（`coreThemeApi`）保存时同步 `runtime.register`；删除激活中的主题自动回落 default。
 
 ### 变更：主题卡片迷你 mock UI 预览

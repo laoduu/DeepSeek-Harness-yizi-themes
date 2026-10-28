@@ -622,7 +622,13 @@ export function customThemeCss(doc: CustomThemeDoc): string {
   const ink = typeof doc.ink === 'string' && doc.ink.trim() !== '' ? doc.ink.trim() : undefined
   const block = (vars: Record<string, string>, dark: boolean): string => {
     const head = dark ? `${selector}[data-ds-dark-theme]` : selector
-    const lines = Object.entries(vars).map(([name, value]) => `  ${name}: ${value};`)
+    // Every declaration carries !important: the core ThemePresenter writes the
+    // ACTIVE core theme's tokens as INLINE style properties on body, and inline
+    // styles beat any normal class selector. Author-important declarations are
+    // the one stylesheet tier above inline styles, so this is what makes an
+    // applied custom theme actually win the cascade. Removing the theme class
+    // (switching back to a core theme) instantly restores the inline tokens.
+    const lines = Object.entries(vars).map(([name, value]) => `  ${name}: ${value} !important;`)
     return `${head} {\n${lines.join('\n')}\n}`
   }
   return [

@@ -44,6 +44,17 @@ function blankEditor(): { name: string; accent: string } {
   return { name: '', accent: DEFAULT_ACCENT }
 }
 
+/** Deterministic document id: djb2 over name + accent, base36. The same
+ * name+accent pair always yields the same id, so repeated 添加 clicks (or an
+ * impatient double-click) upsert one document instead of stacking duplicates;
+ * a different name OR accent still gets its own theme. */
+function themeId(name: string, accent: string): string {
+  const input = `${name}\u0000${accent}`
+  let hash = 5381
+  for (let i = 0; i < input.length; i++) hash = ((hash << 5) + hash + input.charCodeAt(i)) | 0
+  return `${CUSTOM_THEME_PREFIX}${(hash >>> 0).toString(36)}`
+}
+
 /** One segmented choice. */
 interface ChipOption {
   readonly value: string
@@ -123,11 +134,13 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
     }
   }
   const save = (): void => {
-    const id = editingId ?? `${CUSTOM_THEME_PREFIX}${Date.now().toString(36)}`
+    const resolvedName = name.trim() !== '' ? name.trim() : t('studio.defaultName')
+    const resolvedAccent = normalizeHex(accent, DEFAULT_ACCENT)
+    const id = editingId ?? themeId(resolvedName, resolvedAccent)
     onSave({
       id,
-      name: name.trim() !== '' ? name.trim() : t('studio.defaultName'),
-      accent: normalizeHex(accent, DEFAULT_ACCENT),
+      name: resolvedName,
+      accent: resolvedAccent,
       lightBg: normalizeHex(lightBg, deriveLightBg(accent)),
       darkBg: normalizeHex(darkBg, deriveDarkBg(accent)),
       ...(ink.trim() !== '' ? { ink: normalizeHex(ink, '') } : {}),

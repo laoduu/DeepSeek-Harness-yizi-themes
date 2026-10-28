@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-10-28 · v0.6.2：内联样式遮蔽——自定义主题「全黑没生效」的真正根因（用户报"海之蓝没有一点蓝"）
+
+### 踩坑：三层"看起来都对"，级联层输了
+
+用户报应用自定义主题后 UI 全黑无主题色，且添加/删除/保存均无即时反馈。诊断走了大弯路：
+
+1. **怀疑响应链**。通读 cordis `effect`（vendor 源码确认 "execute runs immediately"）、ui-renderer 的 `standardKit/storeOf/observableHook`、store 引擎（sync flush、revision 单调）——静态层全对。
+2. **headless 实证**。esbuild 打包 vendor cordis + dsh-client-store 源码 + 插件 themes-store，复刻 `ctx.effect(() => themesStore.subscribe(...))` 接线：监听触发、store 通知、主题数组全部到位——链路正常。
+3. **jsdom 实车**。用 `new Function` 加载**真实 dist/client.js**（模块加载器 shim + React 18.3.1 + store 源码别名打包），伪造 slots/locale/theme 服务，走完整用户流（填名称、选色、点添加、点删除）：**sheet 更新 ✓、store 通知 ✓、网格与列表在下一帧 flush 后正确出现新主题 ✓**。响应链在真实 bundle + 真实 React 下也没有问题。
+
+### 真根因：rc.3 ThemePresenter 的内联 token
+
+读 `git show dsh-v0.2.1-rc.3:packages/client/ui-layout/src/client/theme-presenter.ts`：核心把**活动主题的全部 token 以 `body.style.setProperty` 写成内联样式**。CSS 级联里内联样式压过一切普通类选择器——`body.theme-custom-x { --vars }` 永远输给上一主题的内联 token。于是应用自定义主题后外观纹丝不动（用户停在旧主题的暗色观感上，"没有一点蓝，都是黑色的"）；添加/删除/保存的"无反馈"本质是**外观从不变化，反馈无从观察**。
+
+**修复**：`customThemeCss` 每条声明加 `!important`（author-important 是唯一高于内联的层叠来源）。类挂上即赢、类移除即还（核心主题的内联 token 原样保留），不需要清写 presenter 的 DOM。
+
+### 方法论沉淀
+
+- **工作树 ≠ 运行版本**：harness 检出在 alpha.1 分支，app 跑 rc.3——框架层源码必须 `git show dsh-v0.2.1-rc.3:<path>` 核对（本次两者恰好一致，但不能靠运气）。
+- **"响应式坏了"先验证级联**：样式不生效时，先查最终计算值的输赢（谁的选择器/层叠来源在起作用），再查状态链。这次三层状态链全对，输的是 CSS。
+- **jsdom 实车可复刻 Electron 插件环境**：真实 bundle + 模块表 shim + 真实 React + 真实 store，比 mock 组件测试多抓住了整个接线层；受控输入要用 `el.value=` 直写（React value tracker 拦截 prototype setter 路径）。
+
+---
+
 ## 2026-10-28 · v0.6.1：派生引擎 v3——预设语法五声部（用户问"三个颜色够吗"）
 
 ### 方法：先把 19 套预设拆成"独立设计决策"，再决定暴露几个输入

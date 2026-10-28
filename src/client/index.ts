@@ -290,6 +290,9 @@ export function apply(ctx: Context): void {
     if (index >= 0) customs[index] = doc
     else customs.push(doc)
     themesStore.set(customs)
+    // Belt and suspenders: refresh the emitted CSS directly, so the applied
+    // look updates this tick even if the subscription effect ever misses.
+    refreshSheets()
     if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
       try {
         runtime.register({
@@ -305,6 +308,8 @@ export function apply(ctx: Context): void {
   }
   const removeCustomTheme = (id: string): void => {
     themesStore.set(themesStore.customs().filter((entry) => entry.id !== id))
+    // Direct sheet refresh (same belt as save): deletion is visible at once.
+    refreshSheets()
     // Deleting the active theme reverts to the default palette.
     if (themeBackend.readThemeId() === id) themeBackend.setThemeId(DEFAULT_THEME)
   }

@@ -1,13 +1,24 @@
 /**
  * Theme Studio — the custom-theme editor section of the Appearance row.
- * Three inputs (accent + optional explicit light/dark page backgrounds,
- * auto-derived from the accent until the user overrides them) with a live
- * mini mock preview, plus the saved-themes list (apply / edit / delete).
+ *
+ * Balance between "one click" and "as rich as the presets": the BASIC editor
+ * is a single accent picker (the derivation does everything); an ADVANCED
+ * disclosure exposes the refinement decisions the presets actually make by
+ * hand — the ink hue (second voice: text/toast/dark tint), surface tint
+ * strength, border voice, and the explicit page backgrounds. Everything
+ * advanced is optional; untouched fields stay automatic.
  * All persistence and CSS emission live in custom-themes.ts; this component
  * only edits documents and calls the injected handlers.
  */
 import { useState } from 'react'
-import { CUSTOM_THEME_PREFIX, deriveDarkBg, deriveLightBg, normalizeHex } from './custom-themes.ts'
+import {
+  CUSTOM_THEME_PREFIX,
+  deriveDarkBg,
+  deriveDarkBrand,
+  deriveInk,
+  deriveLightBg,
+  normalizeHex,
+} from './custom-themes.ts'
 import type { CustomThemeDoc } from './custom-themes.ts'
 import { MockPreview } from './MockPreview.tsx'
 
@@ -25,9 +36,44 @@ export interface StudioSectionProps {
   onRemove: (id: string) => void
 }
 
+/** Default accent for a fresh editor. */
+const DEFAULT_ACCENT = '#0066cc'
+
 /** Fresh-editor state (new theme). */
 function blankEditor(): { name: string; accent: string } {
-  return { name: '', accent: '#0066cc' }
+  return { name: '', accent: DEFAULT_ACCENT }
+}
+
+/** One segmented choice. */
+interface ChipOption {
+  readonly value: string
+  readonly label: string
+}
+
+/** Segmented chip row (tint strength / border voice). */
+function ChipRow({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly ChipOption[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <span className="dsw-yizi-studio-chips">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`dsw-yizi-studio-chip${option.value === value ? ' active' : ''}`}
+          onClick={() => { onChange(option.value) }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </span>
+  )
 }
 
 /**
@@ -38,9 +84,12 @@ function blankEditor(): { name: string; accent: string } {
 export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioSectionProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState('')
-  const [accent, setAccent] = useState('#0066cc')
-  const [lightBg, setLightBg] = useState(() => deriveLightBg('#0066cc'))
-  const [darkBg, setDarkBg] = useState(() => deriveDarkBg('#0066cc'))
+  const [accent, setAccent] = useState(DEFAULT_ACCENT)
+  const [lightBg, setLightBg] = useState(() => deriveLightBg(DEFAULT_ACCENT))
+  const [darkBg, setDarkBg] = useState(() => deriveDarkBg(DEFAULT_ACCENT))
+  const [ink, setInk] = useState('')
+  const [tint, setTint] = useState(1)
+  const [borderStyle, setBorderStyle] = useState<'brand' | 'ink'>('brand')
   const [bgDirty, setBgDirty] = useState(false)
 
   const startNew = (): void => {
@@ -50,6 +99,9 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
     setAccent(fresh.accent)
     setLightBg(deriveLightBg(fresh.accent))
     setDarkBg(deriveDarkBg(fresh.accent))
+    setInk('')
+    setTint(1)
+    setBorderStyle('brand')
     setBgDirty(false)
   }
   const startEdit = (doc: CustomThemeDoc): void => {
@@ -58,6 +110,9 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
     setAccent(doc.accent)
     setLightBg(doc.lightBg)
     setDarkBg(doc.darkBg)
+    setInk(doc.ink ?? '')
+    setTint(doc.surfaceTint ?? 1)
+    setBorderStyle(doc.borderStyle ?? 'brand')
     setBgDirty(true)
   }
   const changeAccent = (value: string): void => {
@@ -72,9 +127,12 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
     onSave({
       id,
       name: name.trim() !== '' ? name.trim() : t('studio.defaultName'),
-      accent: normalizeHex(accent, '#0066cc'),
+      accent: normalizeHex(accent, DEFAULT_ACCENT),
       lightBg: normalizeHex(lightBg, deriveLightBg(accent)),
       darkBg: normalizeHex(darkBg, deriveDarkBg(accent)),
+      ...(ink.trim() !== '' ? { ink: normalizeHex(ink, '') } : {}),
+      ...(tint !== 1 ? { surfaceTint: tint } : {}),
+      ...(borderStyle !== 'brand' ? { borderStyle } : {}),
     })
     startNew()
   }
@@ -89,30 +147,76 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
             placeholder={t('studio.name.placeholder')}
             onChange={(e) => { setName(e.target.value) }}
           />
-          <MockPreview swatch={[lightBg, accent]} />
+          <span className="dsw-yizi-studio-previews">
+            <MockPreview swatch={[lightBg, accent]} />
+            <MockPreview swatch={[darkBg, deriveDarkBrand(accent)]} />
+          </span>
         </div>
         <div className="dsw-yizi-studio-colors">
           <label className="dsw-yizi-studio-color">
             <span>{t('studio.accent')}</span>
             <input type="color" value={accent} onChange={(e) => { changeAccent(e.target.value) }} />
           </label>
-          <label className="dsw-yizi-studio-color">
-            <span>{t('studio.lightBg')}</span>
-            <input
-              type="color"
-              value={lightBg}
-              onChange={(e) => { setLightBg(e.target.value); setBgDirty(true) }}
-            />
-          </label>
-          <label className="dsw-yizi-studio-color">
-            <span>{t('studio.darkBg')}</span>
-            <input
-              type="color"
-              value={darkBg}
-              onChange={(e) => { setDarkBg(e.target.value); setBgDirty(true) }}
-            />
-          </label>
         </div>
+        <details className="dsw-yizi-studio-advanced">
+          <summary>{t('studio.advanced')}</summary>
+          <div className="dsw-yizi-studio-colors">
+            <label className="dsw-yizi-studio-color">
+              <span>{t('studio.ink')}</span>
+              <input
+                type="color"
+                value={ink !== '' ? ink : deriveInk(accent)}
+                onChange={(e) => { setInk(e.target.value) }}
+              />
+              <button
+                type="button"
+                className={`dsw-yizi-studio-chip${ink === '' ? ' active' : ''}`}
+                onClick={() => { setInk('') }}
+              >
+                {t('studio.ink.auto')}
+              </button>
+            </label>
+            <label className="dsw-yizi-studio-color">
+              <span>{t('studio.lightBg')}</span>
+              <input
+                type="color"
+                value={lightBg}
+                onChange={(e) => { setLightBg(e.target.value); setBgDirty(true) }}
+              />
+            </label>
+            <label className="dsw-yizi-studio-color">
+              <span>{t('studio.darkBg')}</span>
+              <input
+                type="color"
+                value={darkBg}
+                onChange={(e) => { setDarkBg(e.target.value); setBgDirty(true) }}
+              />
+            </label>
+          </div>
+          <div className="dsw-yizi-studio-chipsrow">
+            <span className="dsw-yizi-studio-chipslabel">{t('studio.tint')}</span>
+            <ChipRow
+              value={String(tint)}
+              onChange={(value) => { setTint(Number(value)) }}
+              options={[
+                { value: '0.5', label: t('studio.tint.subtle') },
+                { value: '1', label: t('studio.tint.standard') },
+                { value: '1.8', label: t('studio.tint.rich') },
+              ]}
+            />
+          </div>
+          <div className="dsw-yizi-studio-chipsrow">
+            <span className="dsw-yizi-studio-chipslabel">{t('studio.border')}</span>
+            <ChipRow
+              value={borderStyle}
+              onChange={(value) => { setBorderStyle(value === 'ink' ? 'ink' : 'brand') }}
+              options={[
+                { value: 'brand', label: t('studio.border.brand') },
+                { value: 'ink', label: t('studio.border.ink') },
+              ]}
+            />
+          </div>
+        </details>
         <div className="dsw-yizi-studio-actions">
           <button type="button" className="dsw-yizi-doctor-run" onClick={save}>
             {editingId === null ? t('studio.add') : t('studio.update')}

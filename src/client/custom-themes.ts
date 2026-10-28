@@ -1,23 +1,36 @@
 /**
  * Theme Studio — user-defined style themes.
  *
- * A custom theme is three colors: an ACCENT (the brand hue) and optionally
- * explicit light/dark page backgrounds. From those, both mode palettes are
- * derived — in the OKLCH perceptual color space, not by RGB interpolation.
+ * A custom theme is one required color (the ACCENT) plus optional
+ * refinements. The derivation reads the preset themes' shared grammar —
+ * five independent design decisions distilled from the 19 shipped sheets:
  *
- * Why OKLCH: linear RGB mixing muddies (the midpoint of two vivid colors is
- * grey-brown) and cannot separate "how light" from "how colorful", which is
- * exactly what a theme needs to control. Deriving per ROLE instead — near-
- * neutral surfaces with a whisper of the accent hue, a text ladder whose
- * chroma is decoupled from the accent's own vividness, and the brand as the
- * only saturated voice — is what the shipped themes do by hand; the engine
- * below reproduces those relationships (verified against the `academic`
- * sheet: accent #002fa7 derives dark-mode brand ≈ #5a7ce3, its exact value).
+ *  1. brand (accent)   — buttons, highlights, skeleton, interactive tints;
+ *  2. ink              — a SECOND hue owning text + toast + the DARK page
+ *                        tint (academic: violet ink under a blue brand;
+ *                        vaporwave: violet ink under a pink brand);
+ *  3. mode backgrounds — light page follows the BRAND hue, dark page follows
+ *                        the INK hue (vaporwave light #f8f0f6 pink vs dark
+ *                        #140a1e violet);
+ *  4. border voice     — brand-alpha borders (academic) vs ink-alpha borders
+ *                        (typewriter, morandi, minimal);
+ *  5. semantic merge   — when the brand sits close to a semantic hue with
+ *                        real chroma, that state adopts the brand (palace
+ *                        red → error; matrix green → success).
  *
- * Derived colors are emitted as plain hex/rgba — same sheet shape as every
- * built-in theme, so the alias cascade in brand-overrides fills in the rest.
- * Persistence follows the brand document's pattern: a plugin-owned
- * localStorage array (`dsh-yizi-themes:customThemes`), normalized on read.
+ * Derivation happens in the OKLCH perceptual space (Björn Ottosson's
+ * reference matrices): surfaces carry the hue with almost no chroma, the
+ * text ladder's lightness is decoupled from the accent's vividness, and the
+ * brand is lightness-clamped into a readable band per mode. Verified against
+ * the `academic` sheet: accent #002fa7 derives dark-mode brand ≈ #487ff4,
+ * secondary text #5e7fc0, layer-2 #eff4ff — all same-family as the hand-tuned
+ * #5a7ce3 / #5a7ce3 / #edf2ff.
+ *
+ * Output is plain hex/rgba in the exact sheet shape of the built-in themes,
+ * so the alias cascade in brand-overrides fills in the rest. Persistence is
+ * a plugin-owned localStorage array (`dsh-yizi-themes:customThemes`),
+ * normalized on read; documents saved by older versions normalize cleanly
+ * (missing optional fields fall back to the automatic behavior).
  */
 
 /** One user-defined theme (the persisted document). */
@@ -32,6 +45,12 @@ export interface CustomThemeDoc {
   lightBg: string
   /** Dark-mode page background, `#rrggbb`. */
   darkBg: string
+  /** Ink color (text/toast/dark-tint hue); '' = derive from the accent. */
+  ink?: string
+  /** Surface tint strength: 0.5 subtle / 1 standard / 1.8 rich. */
+  surfaceTint?: number
+  /** Border voice: 'brand' (colored chrome) or 'ink' (neutral chrome). */
+  borderStyle?: 'brand' | 'ink'
 }
 
 /** localStorage key holding the persisted custom-theme array. */
@@ -166,18 +185,29 @@ function clampN(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-// ── accent analysis ──────────────────────────────────────────────────────
+/**
+ * Circular hue distance in degrees (0..180).
+ * @param a - first hue.
+ * @param b - second hue.
+ * @returns the shortest distance between the two hues.
+ */
+function hueDist(a: number, b: number): number {
+  const d = Math.abs(((a - b) % 360 + 360) % 360)
+  return Math.min(d, 360 - d)
+}
 
-/** Neutral-blue fallback hue when the accent carries no usable chroma. */
+// ── accent / ink analysis ────────────────────────────────────────────────
+
+/** Neutral-blue fallback hue when a color carries no usable chroma. */
 const FALLBACK_HUE = 265
 
 /**
- * Analyze an accent color for derivation: hue stabilized (greys fall back to
- * a neutral blue), chroma clamped to the UI-safe ceiling.
- * @param hex - the accent color.
- * @returns the OKLCH spec used by both palettes.
+ * Analyze a color for derivation: hue stabilized (greys fall back to a
+ * neutral blue), chroma clamped to the UI-safe ceiling.
+ * @param hex - the color.
+ * @returns the OKLCH spec.
  */
-function accentSpec(hex: string): Oklch {
+function colorSpec(hex: string): Oklch {
   const parsed = hexToOklch(hex)
   if (parsed === null) return { L: 0.5, C: 0.12, H: FALLBACK_HUE }
   return {
@@ -188,60 +218,175 @@ function accentSpec(hex: string): Oklch {
 }
 
 /**
+ * Derive the ink from an accent, following the presets (OKLCH hue wheel):
+ * blue brands drift their ink +43° toward violet (academic 263→306, the
+ * measured #2a1a3a), pink/red-pink brands shift to violet (vaporwave 345→
+ * 303, the measured #3a2a4e), other hue families keep their own hue
+ * (typewriter warm 84, matrix green 147). Chroma stays whisper-low — ink is
+ * a tinted near-neutral.
+ * @param accent - the analyzed accent.
+ * @returns the derived ink spec.
+ */
+function autoInk(accent: Oklch): Oklch {
+  let H = accent.H
+  if (accent.H >= 225 && accent.H < 295) H = accent.H + 43 // blue → violet
+  else if (accent.H >= 320 || accent.H < 15) H = 303 // pink/magenta → violet
+  return { L: 0.27, C: Math.min(0.06, accent.C * 0.22), H }
+}
+
+/** Resolved inputs shared by both palettes. */
+interface PaletteSpec {
+  /** Brand spec. */
+  brand: Oklch
+  /** Ink spec (chroma-capped). */
+  ink: Oklch
+  /** Hue the text ladder follows (ink when vivid, else brand). */
+  textHue: number
+  /** Brand chroma (capped). */
+  brandC: number
+}
+
+/**
+ * Resolve accent + optional explicit ink into the shared derivation inputs.
+ * @param accent - brand color.
+ * @param inkOpt - explicit ink or undefined (auto).
+ * @returns the resolved spec.
+ */
+function resolveSpec(accent: string, inkOpt: string | undefined): PaletteSpec {
+  const A = colorSpec(accent)
+  const I = typeof inkOpt === 'string' && inkOpt.trim() !== ''
+    ? colorSpec(inkOpt.trim())
+    : autoInk(A)
+  const brandC = Math.min(A.C, 0.26)
+  const inkC = Math.min(I.C, 0.10)
+  return {
+    brand: { L: A.L, C: brandC, H: A.H },
+    ink: { L: I.L, C: inkC, H: I.H },
+    textHue: inkC >= 0.05 ? I.H : A.H,
+    brandC,
+  }
+}
+
+/**
  * Derive the light-mode page background from an accent (a whisper-tinted
- * near-white).
+ * near-white in the BRAND hue).
  * @param accent - the accent color.
  * @returns the derived light background.
  */
 export function deriveLightBg(accent: string): string {
-  const A = accentSpec(accent)
+  const A = colorSpec(accent)
   return ok(0.975, Math.min(0.02, A.C * 0.06), A.H)
 }
 
 /**
- * Derive the dark-mode page background from an accent (near-black with a
- * breath of the accent hue).
+ * Derive the dark-mode page background from an accent (near-black tinted by
+ * the INK hue — the presets' dark pages follow ink, not brand).
  * @param accent - the accent color.
  * @returns the derived dark background.
  */
 export function deriveDarkBg(accent: string): string {
-  const A = accentSpec(accent)
-  return ok(0.165, Math.min(0.018, A.C * 0.10), A.H)
+  const A = colorSpec(accent)
+  const ink = autoInk(A)
+  return ok(0.165, Math.min(0.018, A.C * 0.10), ink.H)
+}
+
+/**
+ * The dark-mode brand voice (for previews): lightened into the dark band.
+ * @param accent - the accent color.
+ * @returns the dark-mode brand color.
+ */
+export function deriveDarkBrand(accent: string): string {
+  const A = colorSpec(accent)
+  return ok(clampN(A.L, 0.62, 0.85), Math.min(A.C * 0.95, 0.19), A.H)
+}
+
+/**
+ * The auto-derived ink for an accent (what the editor's '' ink resolves to):
+ * the light-mode label-primary the engine will emit.
+ * @param accent - the accent color.
+ * @returns the auto ink hex.
+ */
+export function deriveInk(accent: string): string {
+  const ink = autoInk(colorSpec(accent))
+  return ok(ink.L, ink.C, ink.H)
 }
 
 // ── palette derivation ───────────────────────────────────────────────────
 
+/** Surface tint strengths (doc.surfaceTint → chroma multiplier). */
+const TINT_STRENGTHS: Record<number, number> = { 0.5: 0.5, 1: 1, 1.8: 1.8 }
+
 /**
- * Derive the LIGHT-mode alias palette from (accent, light background).
+ * Resolve the tint multiplier (unknown values fall back to standard).
+ * @param tint - the doc value.
+ * @returns the chroma multiplier.
+ */
+function tintOf(tint: number | undefined): number {
+  return typeof tint === 'number' && TINT_STRENGTHS[tint] !== undefined ? TINT_STRENGTHS[tint] : 1
+}
+
+/** Semantic hue anchors (OKLCH, measured): red 25°, green 150°. */
+const ERROR_HUE = 25
+const SUCCESS_HUE = 150
+
+/**
+ * Whether the brand is close enough to a semantic hue (with real chroma) to
+ * adopt it — the palace/matrix/vaporwave behavior.
+ * @param brand - the resolved brand spec.
+ * @param target - semantic hue anchor.
+ * @param maxDist - hue distance threshold.
+ * @returns true when the state should merge with the brand.
+ */
+function mergesWithBrand(brand: Oklch, target: number, maxDist: number): boolean {
+  return brand.C > 0.14 && hueDist(brand.H, target) <= maxDist
+}
+
+/**
+ * Derive the LIGHT-mode alias palette.
  *
  * Role recipe (mirrors the shipped light themes):
- *  - surfaces: accent-HUE only, chroma ≤ 0.035 — near-neutral, never pastel;
- *  - text: its own lightness ladder, chroma decoupled from the accent's
- *    vividness (a neon accent still yields calm, readable secondary text);
- *  - brand: the accent, lightness-clamped into the readable band and chroma-
- *    capped, so pastel/neon accents still work as text and fills;
- *  - semantic states: fixed perceptual hues (they must not drift with brand).
+ *  - surfaces: BRAND hue, chroma ≤ ~0.05 scaled by the tint strength;
+ *  - text: lightness ladder 0.27→0.76, hue follows the ink (vaporwave's
+ *    violet secondary) or the brand when the ink is near-neutral;
+ *  - borders: brand-alpha or ink-alpha per the border voice;
+ *  - toast: the ink family, darkness tied to the ink's lightness;
+ *  - states: fixed perceptual hues, merged with the brand when adjacent.
  * @param accent - brand hue.
  * @param bg - page background.
+ * @param inkOpt - explicit ink (undefined = auto).
+ * @param tint - surface tint strength.
+ * @param borderStyle - border voice.
  * @returns alias variable → value for the light block.
  */
-function deriveLightPalette(accent: string, bg: string): Record<string, string> {
-  const A = accentSpec(accent)
-  const { H } = A
-  const C = Math.min(A.C, 0.26)
-  // Brand voice: readable on light surfaces (academic #002fa7 → L 0.42 kept).
-  const brandL = clampN(A.L, 0.40, 0.62)
-  const brand = ok(brandL, C, H)
+function deriveLightPalette(
+  accent: string,
+  bg: string,
+  inkOpt: string | undefined,
+  tint: number,
+  borderStyle: 'brand' | 'ink',
+): Record<string, string> {
+  const S = resolveSpec(accent, inkOpt)
+  const { H: brandH, C: brandC } = S.brand
+  const { H: inkH, C: inkC } = S.ink
+  const brandL = clampN(S.brand.L, 0.40, 0.62)
+  const inkL = clampN(S.ink.L, 0.22, 0.45)
+  const brand = ok(brandL, brandC, brandH)
   const brandSoftL = clampN(brandL + 0.18, 0, 0.85)
-  // Text chroma floor keeps a grey accent usable without going colorless.
-  const textC = Math.max(0.02, Math.min(0.13, C * 0.55))
+  const textC = Math.max(0.02, Math.min(0.13, brandC * 0.55))
+  const tH = S.textHue
+  const borderH = borderStyle === 'ink' ? inkH : brandH
+  const borderL = borderStyle === 'ink' ? inkL : brandL
+  const borderC = borderStyle === 'ink' ? inkC : brandC
+  const borderA = borderStyle === 'ink' ? 0.08 : 0.10
   // Background depth from the (user or derived) page background.
-  const B = hexToOklch(bg) ?? { L: 0.975, C: 0.012, H }
+  const B = hexToOklch(bg) ?? { L: 0.975, C: 0.012, H: brandH }
   const bgL = clampN(B.L, 0.9, 0.995)
   const bgC = Math.min(0.02, B.C)
-  const layer1 = ok(Math.min(0.992, bgL + 0.008), bgC * 0.5, H)
-  const layer2 = ok(bgL - 0.012, Math.min(0.03, bgC + 0.006), H)
-  const layer3 = ok(bgL - 0.026, Math.min(0.035, bgC + 0.013), H)
+  const layer1 = ok(Math.min(0.992, bgL + 0.008), Math.min(0.05, bgC * 0.5 * tint), brandH)
+  const layer2 = ok(bgL - 0.012, Math.min(0.05, (bgC + 0.006) * tint), brandH)
+  const layer3 = ok(bgL - 0.026, Math.min(0.06, (bgC + 0.013) * tint), brandH)
+  const errorMerged = mergesWithBrand(S.brand, ERROR_HUE, 45)
+  const successMerged = mergesWithBrand(S.brand, SUCCESS_HUE, 25)
   return {
     /* 背景层 */
     '--dsw-alias-bg-base': bg,
@@ -251,57 +396,57 @@ function deriveLightPalette(accent: string, bg: string): Record<string, string> 
     '--dsw-alias-bg-overlay': layer2,
     '--dsw-alias-bg-module-platform': layer2,
     '--dsw-alias-bg-multi-select': layer3,
-    '--dsw-alias-bg-skeleton': okA(brandL, C, H, 0.08),
+    '--dsw-alias-bg-skeleton': okA(brandL, brandC, brandH, 0.08),
     /* 文字层 */
-    '--dsw-alias-label-primary': ok(0.26, 0.022, H),
-    '--dsw-alias-label-primary-dimmed': ok(0.33, 0.022, H),
+    '--dsw-alias-label-primary': ok(inkL, inkC, inkH),
+    '--dsw-alias-label-primary-dimmed': ok(inkL + 0.07, inkC, inkH),
     '--dsw-alias-label-primary-bluish': brand,
-    '--dsw-alias-label-secondary': ok(0.60, textC, H),
-    '--dsw-alias-label-tertiary': ok(0.65, textC * 0.8, H),
-    '--dsw-alias-label-caption': ok(0.70, textC * 0.65, H),
-    '--dsw-alias-label-dimmed': ok(0.76, textC * 0.5, H),
+    '--dsw-alias-label-secondary': ok(0.60, textC, tH),
+    '--dsw-alias-label-tertiary': ok(0.65, textC * 0.8, tH),
+    '--dsw-alias-label-caption': ok(0.70, textC * 0.65, tH),
+    '--dsw-alias-label-dimmed': ok(0.76, textC * 0.5, tH),
     /* 边框层 */
-    '--dsw-alias-border-l1': okA(brandL, C, H, 0.10),
-    '--dsw-alias-border-l2': okA(brandL, C, H, 0.16),
-    '--dsw-alias-border-l3': okA(brandL, C, H, 0.22),
-    '--dsw-alias-border-l4': okA(brandL, C, H, 0.28),
+    '--dsw-alias-border-l1': okA(borderL, borderC, borderH, borderA),
+    '--dsw-alias-border-l2': okA(borderL, borderC, borderH, borderA + 0.06),
+    '--dsw-alias-border-l3': okA(borderL, borderC, borderH, borderA + 0.12),
+    '--dsw-alias-border-l4': okA(borderL, borderC, borderH, borderA + 0.18),
     /* 品牌与按钮 */
     '--dsw-alias-brand-primary': brand,
-    '--dsw-alias-brand-text': ok(brandL - 0.05, C, H),
-    '--dsw-alias-brand-primary-invert': ok(0.985, 0.008, H),
+    '--dsw-alias-brand-text': ok(brandL - 0.05, brandC, brandH),
+    '--dsw-alias-brand-primary-invert': ok(0.985, 0.008, brandH),
     '--dsw-alias-brand-primary-new-colorprimary-new-color': brand,
     '--dsw-alias-button-primary-fill': brand,
-    '--dsw-alias-button-primary-hover': ok(brandL - 0.05, C, H),
-    '--dsw-alias-button-primary-dimmed': ok(0.90, 0.045, H),
+    '--dsw-alias-button-primary-hover': ok(brandL - 0.05, brandC, brandH),
+    '--dsw-alias-button-primary-dimmed': ok(0.90, 0.045, brandH),
     '--dsw-alias-button-info-fill': brand,
-    '--dsw-alias-button-info-hover': ok(brandL + 0.08, C, H),
-    '--dsw-alias-button-contrast-fill': ok(brandL - 0.07, C, H),
+    '--dsw-alias-button-info-hover': ok(brandL + 0.08, brandC, brandH),
+    '--dsw-alias-button-contrast-fill': ok(brandL - 0.07, brandC, brandH),
     '--dsw-alias-button-elevated-fill': layer1,
     '--dsw-alias-button-floating-fill': layer1,
     '--dsw-alias-button-floating-hover': layer2,
-    '--dsw-alias-button-ghost-active-fill': okA(brandL, C, H, 0.13),
-    '--dsw-alias-button-ghost-active-hover': okA(brandL, C, H, 0.20),
-    '--dsw-alias-button-ghost-active-border': ok(brandSoftL, C * 0.85, H),
+    '--dsw-alias-button-ghost-active-fill': okA(brandL, brandC, brandH, 0.13),
+    '--dsw-alias-button-ghost-active-hover': okA(brandL, brandC, brandH, 0.20),
+    '--dsw-alias-button-ghost-active-border': ok(brandSoftL, brandC * 0.85, brandH),
     /* 交互层 */
-    '--dsw-alias-interactive-bg-hover': okA(brandL, C, H, 0.08),
-    '--dsw-alias-interactive-bg-active': okA(brandL, C, H, 0.14),
-    '--dsw-alias-interactive-bg-hover-accent': okA(brandL, C, H, 0.16),
+    '--dsw-alias-interactive-bg-hover': okA(brandL, brandC, brandH, 0.08),
+    '--dsw-alias-interactive-bg-active': okA(brandL, brandC, brandH, 0.14),
+    '--dsw-alias-interactive-bg-hover-accent': okA(brandL, brandC, brandH, 0.16),
     '--dsw-alias-interactive-bg-hover-solid': layer3,
     /* 状态层 */
     '--dsw-alias-state-business-primary': brand,
-    '--dsw-alias-state-business-tertiary': ok(0.93, 0.03, H),
-    '--dsw-alias-state-error-primary': ok(0.55, 0.19, 27),
-    '--dsw-alias-state-error-secondary': ok(0.62, 0.19, 27),
-    '--dsw-alias-state-success-primary': ok(0.55, 0.14, 150),
-    '--dsw-alias-state-success-secondary': ok(0.66, 0.13, 150),
-    '--dsw-alias-state-success-tertiary': ok(0.95, 0.03, 150),
+    '--dsw-alias-state-business-tertiary': ok(0.93, 0.03, brandH),
+    '--dsw-alias-state-error-primary': errorMerged ? brand : ok(0.55, 0.19, ERROR_HUE),
+    '--dsw-alias-state-error-secondary': errorMerged ? ok(brandL + 0.06, brandC, brandH) : ok(0.62, 0.19, ERROR_HUE),
+    '--dsw-alias-state-success-primary': successMerged ? brand : ok(0.55, 0.14, SUCCESS_HUE),
+    '--dsw-alias-state-success-secondary': successMerged ? ok(brandL + 0.06, brandC, brandH) : ok(0.66, 0.13, SUCCESS_HUE),
+    '--dsw-alias-state-success-tertiary': ok(0.95, 0.03, SUCCESS_HUE),
     '--dsw-alias-state-warn-primary': ok(0.60, 0.12, 80),
     '--dsw-alias-state-warn-secondary': ok(0.72, 0.13, 80),
     '--dsw-alias-state-warn-tertiary': ok(0.94, 0.05, 95),
     /* Markdown 渲染 */
     '--dsw-alias-markdown-code-block': layer2,
     '--dsw-alias-markdown-code-block-banner': layer3,
-    '--dsw-alias-markdown-inline-code': ok(0.90, 0.05, H),
+    '--dsw-alias-markdown-inline-code': ok(0.90, 0.05, brandH),
     '--dsw-alias-markdown-code-segment-selected': layer1,
     '--dsw-alias-markdown-code-segment-unselected': layer3,
     '--dsw-alias-markdown-tag': layer3,
@@ -309,10 +454,10 @@ function deriveLightPalette(accent: string, bg: string): Record<string, string> 
     '--dsw-alias-markdown-citation': layer2,
     /* 特定区域 */
     '--dsw-specific-bubble': layer2,
-    '--dsw-specific-bubble-highlight': ok(0.88, 0.06, H),
+    '--dsw-specific-bubble-highlight': ok(0.88, 0.06, brandH),
     '--dsw-specific-sidebar-fill': layer1,
-    '--dsw-specific-sidebar-nav-item-active': ok(0.88, 0.06, H),
-    '--dsw-specific-sidebar-nav-item-active-accent': ok(0.83, 0.08, H),
+    '--dsw-specific-sidebar-nav-item-active': ok(0.88, 0.06, brandH),
+    '--dsw-specific-sidebar-nav-item-active-accent': ok(0.83, 0.08, brandH),
     '--dsw-specific-sidebar-nav-item-hover': layer3,
     '--dsw-specific-input-major': layer1,
     '--dsw-specific-login-input': layer2,
@@ -320,44 +465,62 @@ function deriveLightPalette(accent: string, bg: string): Record<string, string> 
     '--dsw-specific-selector': layer3,
     '--dsw-specific-tip': layer2,
     /* 滚动条 */
-    '--dsw-alias-scrollbar-bg-l1': ok(0.82, 0.04, H),
-    '--dsw-alias-scrollbar-bg-l2': ok(0.79, 0.04, H),
-    '--dsw-alias-scrollbar-hover-l1': ok(0.74, 0.045, H),
-    '--dsw-alias-scrollbar-hover-l2': ok(0.68, 0.05, H),
+    '--dsw-alias-scrollbar-bg-l1': ok(0.82, 0.04, brandH),
+    '--dsw-alias-scrollbar-bg-l2': ok(0.79, 0.04, brandH),
+    '--dsw-alias-scrollbar-hover-l1': ok(0.74, 0.045, brandH),
+    '--dsw-alias-scrollbar-hover-l2': ok(0.68, 0.05, brandH),
     /* 浮层 */
-    '--dsw-alias-toast-bg': ok(0.24, 0.025, H),
-    '--dsw-alias-tooltip-bg': ok(0.24, 0.025, H),
+    '--dsw-alias-toast-bg': ok(clampN(inkL + 0.03, 0.20, 0.50), Math.max(inkC, 0.02) * 1.2, inkH),
+    '--dsw-alias-tooltip-bg': ok(clampN(inkL + 0.03, 0.20, 0.50), Math.max(inkC, 0.02) * 1.2, inkH),
   }
 }
 
 /**
- * Derive the DARK-mode alias palette from (accent, dark background).
+ * Derive the DARK-mode alias palette.
  *
  * Role recipe (mirrors the shipped dark blocks):
- *  - brand lightens into the 0.62–0.85 band (academic #002fa7 → #5a7ce3) and
- *    eases its chroma slightly, so fills never glow on dark;
- *  - surfaces step toward white from the dark base, hue-tinted;
- *  - text runs its own ladder from the page background;
- *  - semantic states get the bright dark-mode variants, fixed hues.
+ *  - surfaces: INK hue stepping toward white from the dark base (vaporwave's
+ *    violet-dark ladder);
+ *  - brand lightens into the 0.62–0.85 band with eased chroma;
+ *  - text: its own ladder, ink-hued, near-neutral chroma;
+ *  - borders: brand-alpha or ink-alpha per the border voice;
+ *  - states: bright dark-mode variants, merged with the brand when adjacent.
  * @param accent - brand hue.
  * @param bg - page background.
+ * @param inkOpt - explicit ink (undefined = auto).
+ * @param tint - surface tint strength.
+ * @param borderStyle - border voice.
  * @returns alias variable → value for the dark block.
  */
-function deriveDarkPalette(accent: string, bg: string): Record<string, string> {
-  const A = accentSpec(accent)
-  const { H } = A
-  const brandL = clampN(A.L, 0.62, 0.85)
-  const brandC = Math.min(A.C * 0.95, 0.19)
-  const brand = ok(brandL, brandC, H)
+function deriveDarkPalette(
+  accent: string,
+  bg: string,
+  inkOpt: string | undefined,
+  tint: number,
+  borderStyle: 'brand' | 'ink',
+): Record<string, string> {
+  const S = resolveSpec(accent, inkOpt)
+  const { H: brandH, C: brandC } = S.brand
+  const { H: inkH, C: inkC } = S.ink
+  const brandL = clampN(S.brand.L, 0.62, 0.85)
+  const brand = ok(brandL, brandC, brandH)
   const brandFillL = Math.max(0.45, brandL - 0.12)
-  const textC = Math.max(0.015, Math.min(0.10, A.C * 0.45))
-  const B = hexToOklch(bg) ?? { L: 0.165, C: 0.01, H }
+  const textC = Math.max(0.015, Math.min(0.10, brandC * 0.45))
+  const tH = S.textHue
+  const labelC = Math.min(0.05, inkC * 1.2)
+  const borderH = borderStyle === 'ink' ? inkH : brandH
+  const borderL = borderStyle === 'ink' ? inkL : brandL
+  const borderC = borderStyle === 'ink' ? inkC : brandC
+  const borderA = borderStyle === 'ink' ? 0.10 : 0.08
+  const B = hexToOklch(bg) ?? { L: 0.165, C: 0.01, H: inkH }
   const bgL = clampN(B.L, 0.10, 0.28)
-  const bgC = Math.min(0.02, B.C)
-  const layer1 = ok(bgL + 0.035, bgC, H)
-  const layer2 = ok(bgL + 0.055, bgC, H)
-  const layer3 = ok(bgL + 0.115, bgC * 1.3, H)
-  const overlay = ok(bgL + 0.155, bgC * 1.4, H)
+  const bgC = Math.min(0.02, B.C) * tint
+  const layer1 = ok(bgL + 0.035, Math.min(0.04, bgC), inkH)
+  const layer2 = ok(bgL + 0.055, Math.min(0.05, bgC), inkH)
+  const layer3 = ok(bgL + 0.115, Math.min(0.06, bgC * 1.3), inkH)
+  const overlay = ok(bgL + 0.155, Math.min(0.07, bgC * 1.4), inkH)
+  const errorMerged = mergesWithBrand(S.brand, ERROR_HUE, 45)
+  const successMerged = mergesWithBrand(S.brand, SUCCESS_HUE, 25)
   return {
     /* 背景层 */
     '--dsw-alias-bg-base': bg,
@@ -367,50 +530,50 @@ function deriveDarkPalette(accent: string, bg: string): Record<string, string> {
     '--dsw-alias-bg-overlay': overlay,
     '--dsw-alias-bg-module-platform': layer2,
     '--dsw-alias-bg-multi-select': layer3,
-    '--dsw-alias-bg-skeleton': okA(brandL, brandC, H, 0.08),
+    '--dsw-alias-bg-skeleton': okA(brandL, brandC, brandH, 0.08),
     /* 文字层 */
-    '--dsw-alias-label-primary': ok(0.85, 0.012, H),
-    '--dsw-alias-label-primary-dimmed': ok(0.74, 0.012, H),
+    '--dsw-alias-label-primary': ok(0.85, labelC, inkH),
+    '--dsw-alias-label-primary-dimmed': ok(0.74, labelC, inkH),
     '--dsw-alias-label-primary-bluish': brand,
-    '--dsw-alias-label-secondary': ok(0.68, textC, H),
-    '--dsw-alias-label-tertiary': ok(0.60, textC * 0.8, H),
-    '--dsw-alias-label-caption': ok(0.53, textC * 0.65, H),
-    '--dsw-alias-label-dimmed': ok(0.46, textC * 0.5, H),
+    '--dsw-alias-label-secondary': ok(0.68, textC, tH),
+    '--dsw-alias-label-tertiary': ok(0.60, textC * 0.8, tH),
+    '--dsw-alias-label-caption': ok(0.53, textC * 0.65, tH),
+    '--dsw-alias-label-dimmed': ok(0.46, textC * 0.5, tH),
     /* 边框层 */
-    '--dsw-alias-border-l1': okA(brandL, brandC, H, 0.08),
-    '--dsw-alias-border-l2': okA(brandL, brandC, H, 0.14),
-    '--dsw-alias-border-l3': okA(brandL, brandC, H, 0.20),
-    '--dsw-alias-border-l4': okA(brandL, brandC, H, 0.26),
+    '--dsw-alias-border-l1': okA(borderL, borderC, borderH, borderA),
+    '--dsw-alias-border-l2': okA(borderL, borderC, borderH, borderA + 0.06),
+    '--dsw-alias-border-l3': okA(borderL, borderC, borderH, borderA + 0.12),
+    '--dsw-alias-border-l4': okA(borderL, borderC, borderH, borderA + 0.18),
     /* 品牌与按钮 */
     '--dsw-alias-brand-primary': brand,
-    '--dsw-alias-brand-text': ok(Math.min(0.9, brandL + 0.08), brandC, H),
+    '--dsw-alias-brand-text': ok(Math.min(0.9, brandL + 0.08), brandC, brandH),
     '--dsw-alias-brand-primary-invert': bg,
     '--dsw-alias-brand-primary-new-colorprimary-new-color': brand,
-    '--dsw-alias-button-primary-fill': ok(brandFillL, brandC, H),
-    '--dsw-alias-button-primary-hover': ok(brandFillL + 0.08, brandC, H),
+    '--dsw-alias-button-primary-fill': ok(brandFillL, brandC, brandH),
+    '--dsw-alias-button-primary-hover': ok(brandFillL + 0.08, brandC, brandH),
     '--dsw-alias-button-primary-dimmed': layer3,
-    '--dsw-alias-button-info-fill': ok(brandFillL + 0.08, brandC, H),
-    '--dsw-alias-button-info-hover': ok(brandFillL, brandC, H),
-    '--dsw-alias-button-contrast-fill': ok(Math.min(0.88, brandL + 0.12), brandC * 0.8, H),
+    '--dsw-alias-button-info-fill': ok(brandFillL + 0.08, brandC, brandH),
+    '--dsw-alias-button-info-hover': ok(brandFillL, brandC, brandH),
+    '--dsw-alias-button-contrast-fill': ok(Math.min(0.88, brandL + 0.12), brandC * 0.8, brandH),
     '--dsw-alias-button-elevated-fill': layer3,
     '--dsw-alias-button-floating-fill': layer2,
     '--dsw-alias-button-floating-hover': layer3,
     '--dsw-alias-button-ghost-active-fill': overlay,
-    '--dsw-alias-button-ghost-active-hover': ok(bgL + 0.165, bgC * 1.4, H),
+    '--dsw-alias-button-ghost-active-hover': ok(bgL + 0.165, Math.min(0.07, bgC * 1.4), inkH),
     '--dsw-alias-button-ghost-active-border': brand,
     /* 交互层 */
-    '--dsw-alias-interactive-bg-hover': okA(brandL, brandC, H, 0.08),
-    '--dsw-alias-interactive-bg-active': okA(brandL, brandC, H, 0.14),
-    '--dsw-alias-interactive-bg-hover-accent': okA(brandL, brandC, H, 0.16),
+    '--dsw-alias-interactive-bg-hover': okA(brandL, brandC, brandH, 0.08),
+    '--dsw-alias-interactive-bg-active': okA(brandL, brandC, brandH, 0.14),
+    '--dsw-alias-interactive-bg-hover-accent': okA(brandL, brandC, brandH, 0.16),
     '--dsw-alias-interactive-bg-hover-solid': layer3,
     /* 状态层 */
     '--dsw-alias-state-business-primary': brand,
     '--dsw-alias-state-business-tertiary': layer3,
-    '--dsw-alias-state-error-primary': ok(0.66, 0.19, 27),
-    '--dsw-alias-state-error-secondary': ok(0.60, 0.19, 27),
-    '--dsw-alias-state-success-primary': ok(0.72, 0.15, 150),
-    '--dsw-alias-state-success-secondary': ok(0.64, 0.13, 150),
-    '--dsw-alias-state-success-tertiary': ok(0.30, 0.04, 150),
+    '--dsw-alias-state-error-primary': errorMerged ? brand : ok(0.66, 0.19, ERROR_HUE),
+    '--dsw-alias-state-error-secondary': errorMerged ? ok(brandL - 0.06, brandC, brandH) : ok(0.60, 0.19, ERROR_HUE),
+    '--dsw-alias-state-success-primary': successMerged ? brand : ok(0.72, 0.15, SUCCESS_HUE),
+    '--dsw-alias-state-success-secondary': successMerged ? ok(brandL - 0.06, brandC, brandH) : ok(0.64, 0.13, SUCCESS_HUE),
+    '--dsw-alias-state-success-tertiary': ok(0.30, 0.04, SUCCESS_HUE),
     '--dsw-alias-state-warn-primary': ok(0.78, 0.13, 85),
     '--dsw-alias-state-warn-secondary': ok(0.68, 0.12, 85),
     '--dsw-alias-state-warn-tertiary': ok(0.32, 0.05, 95),
@@ -428,7 +591,7 @@ function deriveDarkPalette(accent: string, bg: string): Record<string, string> {
     '--dsw-specific-bubble-highlight': overlay,
     '--dsw-specific-sidebar-fill': layer1,
     '--dsw-specific-sidebar-nav-item-active': layer3,
-    '--dsw-specific-sidebar-nav-item-active-accent': ok(bgL + 0.165, bgC * 1.4, H),
+    '--dsw-specific-sidebar-nav-item-active-accent': ok(bgL + 0.165, Math.min(0.07, bgC * 1.4), inkH),
     '--dsw-specific-sidebar-nav-item-hover': layer2,
     '--dsw-specific-input-major': layer2,
     '--dsw-specific-login-input': layer1,
@@ -436,13 +599,13 @@ function deriveDarkPalette(accent: string, bg: string): Record<string, string> {
     '--dsw-specific-selector': layer3,
     '--dsw-specific-tip': layer2,
     /* 滚动条 */
-    '--dsw-alias-scrollbar-bg-l1': ok(bgL + 0.055, bgC * 1.2, H),
-    '--dsw-alias-scrollbar-bg-l2': ok(bgL + 0.085, bgC * 1.3, H),
-    '--dsw-alias-scrollbar-hover-l1': ok(bgL + 0.135, bgC * 1.4, H),
-    '--dsw-alias-scrollbar-hover-l2': ok(bgL + 0.185, bgC * 1.5, H),
+    '--dsw-alias-scrollbar-bg-l1': ok(bgL + 0.055, Math.min(0.04, bgC * 1.2), inkH),
+    '--dsw-alias-scrollbar-bg-l2': ok(bgL + 0.085, Math.min(0.05, bgC * 1.3), inkH),
+    '--dsw-alias-scrollbar-hover-l1': ok(bgL + 0.135, Math.min(0.06, bgC * 1.4), inkH),
+    '--dsw-alias-scrollbar-hover-l2': ok(bgL + 0.185, Math.min(0.07, bgC * 1.5), inkH),
     /* 浮层 */
-    '--dsw-alias-toast-bg': ok(0.27, 0.02, H),
-    '--dsw-alias-tooltip-bg': ok(0.27, 0.02, H),
+    '--dsw-alias-toast-bg': ok(0.27, Math.max(0.015, inkC * 0.8), inkH),
+    '--dsw-alias-tooltip-bg': ok(0.27, Math.max(0.015, inkC * 0.8), inkH),
   }
 }
 
@@ -454,6 +617,9 @@ function deriveDarkPalette(accent: string, bg: string): Record<string, string> {
  */
 export function customThemeCss(doc: CustomThemeDoc): string {
   const selector = `body.theme-${doc.id}`
+  const tint = tintOf(doc.surfaceTint)
+  const borderStyle = doc.borderStyle === 'ink' ? 'ink' : 'brand'
+  const ink = typeof doc.ink === 'string' && doc.ink.trim() !== '' ? doc.ink.trim() : undefined
   const block = (vars: Record<string, string>, dark: boolean): string => {
     const head = dark ? `${selector}[data-ds-dark-theme]` : selector
     const lines = Object.entries(vars).map(([name, value]) => `  ${name}: ${value};`)
@@ -461,8 +627,8 @@ export function customThemeCss(doc: CustomThemeDoc): string {
   }
   return [
     `/* Theme Studio: ${doc.name} (${doc.id}) */`,
-    block(deriveLightPalette(doc.accent, doc.lightBg), false),
-    block(deriveDarkPalette(doc.accent, doc.darkBg), true),
+    block(deriveLightPalette(doc.accent, doc.lightBg, ink, tint, borderStyle), false),
+    block(deriveDarkPalette(doc.accent, doc.darkBg, ink, tint, borderStyle), true),
   ].join('\n')
 }
 
@@ -488,7 +654,8 @@ export function normalizeHex(value: unknown, fallback: string): string {
 }
 
 /**
- * Fold unknown JSON into a valid CustomThemeDoc, deriving missing colors.
+ * Fold unknown JSON into a valid CustomThemeDoc, deriving missing colors and
+ * defaulting the optional refinement fields (old documents migrate cleanly).
  * @param raw - parsed storage value.
  * @param index - fallback index for name/id synthesis.
  * @returns the doc, or null when unusable.
@@ -510,6 +677,14 @@ export function normalizeCustomTheme(raw: unknown, index: number): CustomThemeDo
     accent,
     lightBg: normalizeHex(source.lightBg, deriveLightBg(accent)),
     darkBg: normalizeHex(source.darkBg, deriveDarkBg(accent)),
+    ink: typeof source.ink === 'string' && source.ink.trim() !== ''
+      ? normalizeHex(source.ink, '')
+      : undefined,
+    surfaceTint: typeof source.surfaceTint === 'number'
+      && TINT_STRENGTHS[source.surfaceTint] !== undefined
+      ? source.surfaceTint
+      : undefined,
+    borderStyle: source.borderStyle === 'ink' ? 'ink' : undefined,
   }
 }
 

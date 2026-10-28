@@ -22,9 +22,13 @@ import { HeaderControls } from './HeaderControls.tsx'
 import type { HeaderControlsProps } from './HeaderControls.tsx'
 import { mountFloatingControls } from './FloatingControls.tsx'
 import { createThemeBackend } from './theme-backend.ts'
+import type { ThemeBackend } from './theme-backend.ts'
 import { applyBrand } from './brand-apply.ts'
 import { registerBrandSlots } from './brand-slots.tsx'
 import { brandStore } from './brand-store.ts'
+import { registerThemeCommand } from './theme-commands.ts'
+import { runDoctorChecks } from './doctor.tsx'
+import type { DoctorReport } from './doctor.tsx'
 
 /** Plugin identity. */
 export const name = 'dsh-yizi-themes'
@@ -152,10 +156,12 @@ function buildInjected(
   settings: CustomBrandConfig,
   setSettings: (patch: Partial<CustomBrandConfig>) => void,
   writeThemeId: (id: string) => void,
+  runDoctor: () => DoctorReport,
 ): AppearanceRowInjected {
   return {
     setThemeId: (id) => { writeThemeId(id) },
     setCustomBrand: (patch) => { setSettings(patch) },
+    runDoctor,
   }
 }
 
@@ -172,6 +178,32 @@ export function apply(ctx: Context): void {
   const themeBackend = createThemeBackend(runtime, ctx)
   // Restore the persisted theme on boot (plugin path only).
   themeBackend.reassert()
+
+  // ── /theme slash command (official ui-commands surface) ────────────────
+  // Registered as a popupSelect contribution: both style themes and the
+  // light/dark preference, searchable, current values pre-highlighted. On a
+  // core without the commandUi service the inner fiber stays PENDING and the
+  // plugin activates without the command — no crash path.
+  const t = ctx.locale.bind(SETTINGS_NS)
+  registerThemeCommand(ctx, {
+    backend: themeBackend,
+    preference: () => {
+      try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
+    },
+    setPreference: (preference) => { runtime.setTheme(preference) },
+    translate: (key) => t(key as ThemeKey),
+  })
+
+  // ── Doctor self-check inputs (used by the Appearance row's diagnostics) ─
+  const runDoctor = (): DoctorReport => runDoctorChecks({
+    themeId: () => themeBackend.readThemeId(),
+    coreThemeApi: themeBackend.coreThemeApi,
+    preference: () => {
+      try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
+    },
+    commandUiAvailable: () => (ctx as unknown as { get(name: string): unknown }).get('commandUi') !== undefined,
+    translate: (key) => t(key as ThemeKey),
+  })
 
   // ── Brand slots (rc.8+): render the custom brand through the official
   // brand seats instead of DOM surgery ─────────────────────────────────────
@@ -284,7 +316,7 @@ export function apply(ctx: Context): void {
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
     bound = actions
     sync()
-    return buildInjected(ctx, customBrand, setCustomBrand, (id) => themeBackend.setThemeId(id))
+    return buildInjected(ctx, customBrand, setCustomBrand, (id) => themeBackend.setThemeId(id), runDoctor)
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',

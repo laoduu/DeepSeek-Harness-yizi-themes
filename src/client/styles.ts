@@ -239,4 +239,130 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
 button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   display: none;
 }
+
+/* ── Doctor (diagnostics) section ────────────────────────────────────── */
+
+.dsw-yizi-doctor {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  padding: 0 12px;
+}
+
+.dsw-yizi-doctor-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.dsw-yizi-doctor-summary::-webkit-details-marker {
+  display: none;
+}
+
+.dsw-yizi-doctor-summary::before {
+  content: '▸';
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+  transition: transform 0.15s ease;
+}
+
+.dsw-yizi-doctor[open] .dsw-yizi-doctor-summary::before {
+  transform: rotate(90deg);
+}
+
+.dsw-yizi-doctor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 12px;
+}
+
+.dsw-yizi-doctor-run {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.dsw-yizi-doctor-run:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dsw-yizi-doctor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsw-yizi-doctor-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsw-yizi-doctor-status {
+  flex: none;
+  width: 14px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.dsw-yizi-doctor-ok {
+  color: var(--dsw-alias-state-success-primary, var(--dsw-alias-brand-primary));
+}
+
+.dsw-yizi-doctor-warn {
+  color: var(--dsw-alias-state-warn-label);
+}
+
+.dsw-yizi-doctor-fail {
+  color: var(--dsw-alias-label-error);
+}
+
+.dsw-yizi-doctor-info {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-doctor-label {
+  flex: none;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsw-yizi-doctor-detail {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-doctor-gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsw-yizi-doctor-gap-chip {
+  padding: 1px 6px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary);
+}
 `

@@ -12,6 +12,8 @@ import type { ThemeKey } from './locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { createAppearanceRowStore } from './settings-store.ts'
 import type { ThemeDefinition } from './themes-list.ts'
+import type { DoctorReport } from './doctor.tsx'
+import { DoctorSection } from './doctor.tsx'
 
 /** Injected business face: the theme/custom-brand writes. */
 export interface AppearanceRowInjected {
@@ -19,6 +21,8 @@ export interface AppearanceRowInjected {
   setThemeId: (id: string) => void
   /** Switch the custom brand configuration. */
   setCustomBrand: (patch: Partial<CustomBrandConfig>) => void
+  /** Run the diagnostics self-check (present on every current build). */
+  runDoctor?: () => DoctorReport
 }
 
 /** Full component props: runtime share + store share + locale seat + injected face. */
@@ -65,7 +69,7 @@ function MarkupPreview({ markup, className }: { markup: string; className?: stri
  * @param props - composed slot props.
  * @returns the row element tree.
  */
-export function AppearanceRow({ t, setThemeId, setCustomBrand, useStore }: AppearanceRowComponentProps) {
+export function AppearanceRow({ t, setThemeId, setCustomBrand, runDoctor, useStore }: AppearanceRowComponentProps) {
   const themeId = useStore(s => s.theme)
   const themes = useStore(s => s.themes)
   const customBrand = useStore(s => s.customBrand)
@@ -242,6 +246,9 @@ export function AppearanceRow({ t, setThemeId, setCustomBrand, useStore }: Appea
           </div>
         </div>
       </div>
+      {runDoctor !== undefined && (
+        <DoctorSection run={runDoctor} t={(key) => t(key as ThemeKey)} />
+      )}
     </div>
   )
 }

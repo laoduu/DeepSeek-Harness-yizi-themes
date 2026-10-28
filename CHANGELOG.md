@@ -1,5 +1,23 @@
 # 版本日志 / Changelog
 
+## 0.5.5 — 2026-10-28
+
+> 两个**纯官方扩展面**的新功能：`/theme` 斜杠命令（输入框直接切换主题/明暗）+ 运行时自检「诊断」面板。零新增脆弱钩子；不含 ui-commands 的核心自动跳过命令注册，不影响激活。
+
+### 新增：`/theme` 斜杠命令（popupSelect）
+
+- **官方接口依据**：核心 `ui-commands` 的 contribution 注册面（`ctx.commandUi.register`），与 `/model`、`/permission` 同一机制。在输入框敲 `/theme` 打开共享弹层：`fuzzy-label` 搜索，两组选项——**风格主题**（默认 + 19 套，当前项预高亮）与**明暗模式**（跟随系统 / 浅色 / 深色）。
+- **实现**：`theme-commands.ts` 通过 `ctx.inject(['commandUi'], …)` 注册（cordis 中这是独立子 fiber：服务缺失时永远 PENDING、回调不执行、**外层插件照常激活**——老核心零风险；所有支持代核心 ≥ v0.1.2-alpha.1 均已内置 ui-commands）。选项数据由插件 theme-backend 现读现答；`onSelect` 分流：`pref:*` → `runtime.setTheme`，其余 → `setThemeId`。
+- 命令行图标复用插件自绘调色板 SVG（抽出为共享 `PaletteIcon.tsx`）。
+
+### 新增：运行时自检面板（设置 → 外观 → 诊断）
+
+- **8 项检查**（纯浏览器侧读取，无核心内部接口，检查本身也是升级免疫的）：样式表注入、主题状态（id/preference/路径）、品牌槽位渲染、切换入口、平台图标解析、命令服务、localStorage 文档、**令牌覆盖扫描**。
+- **令牌覆盖扫描** = COMPAT-0.2.1-rc.3.md 审计的在线版：遍历除插件样式表外的全部 `document.styleSheets`，收集 `var(--dsw-…)` 引用与定义，求差得「插件覆盖数」与「全仓未定义令牌」（按引用频次排序，前 24 个以 chip 展示）——未来的补全覆盖点当场可见。
+- 按需运行（点「运行体检」），不随渲染执行；状态色用核心语义令牌（`state-success-primary` / `state-warn-label` / `label-error`，带回退）。
+
+---
+
 ## 0.5.4 — 2026-10-26
 
 > 修复：品牌尺寸放大后**侧边栏品牌区底部被裁切**——放开核心对品牌行的固定几何（非破坏式覆盖，官方槽位契约不变）。

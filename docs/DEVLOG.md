@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-10-28 · v0.5.5：`/theme` 斜杠命令 + 运行时自检（两个纯官方面的新功能）
+
+### cordis 的 `ctx.inject(['service'], cb)` 是可选服务的安全挂载点
+
+给插件接 `/theme` 命令前最大的顾虑：老核心/异构核心没有 `commandUi` 服务时，注入声明会不会拖垮整个插件激活（引导是全有或全无）。读了 `vendor/cordis/src/fiber.ts` 才放心：`ctx.inject(deps, cb)` 会 spawn 一个**独立的子 fiber**，状态机里有专门的 `PENDING — waiting for required services` 态——必需服务永不出现，子 fiber 就永远 PENDING、回调永不执行，**外层插件照常 ACTIVE**。结论：想让插件吃"可能不存在的核心服务"，一律走 `ctx.inject` 子 fiber，绝不要把服务名加进插件顶层的 `inject = [...]`（那里缺失才会挂）。虽然核实过 ui-commands 从 `v0.1.2-alpha.1`（最早支持代）就存在，防御仍是免费的。
+
+### CommandContribution 的文案是"每次开菜单现问"的
+
+`label()` / `description()` / `searchLabels()` 都是回调、每次候选合成时现调——所以文案必须从绑定的 translate 闭包现读，不能在注册时捕获字符串，否则换语言要等重注册。`options(session, signal)` 同理，每次打开现答，插件借此返回实时主题状态（`active` 行即弹层高亮落点）。
+
+### Doctor 的令牌覆盖扫描：把审计做成面板
+
+COMPAT-0.2.1-rc.3.md 那次 381 个 `var()` 引用求差集是纯手工；0.5.5 把它变成 `document.styleSheets` 上的在线扫描：插件自己的 `<style>` 用 `ownerNode` 身份跳过（不能按 id 查 styleSheets）、嵌套规则（`CSSMediaRule` 等）递归、每个 sheet 单独 try/catch（跨域 sheet 会 throw）。"全仓未定义"令牌 = 核心引用 − 核心定义 − 插件定义——这类令牌现在渲染为回退色，是天然的补全覆盖点清单。检查按需运行，不挂渲染热路径。
+
+---
+
 ## 2026-10-26 · v0.5.2：0.2.1-rc.3 兼容确认 + 全量令牌覆盖审计
 
 ### 「深度求索中，用时…」没主题化？先查装的版本

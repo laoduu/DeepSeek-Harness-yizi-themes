@@ -503,6 +503,8 @@ function deriveDarkPalette(
   const { H: brandH, C: brandC } = S.brand
   const { H: inkH, C: inkC } = S.ink
   const brandL = clampN(S.brand.L, 0.62, 0.85)
+  /** Ink lightness for the neutral-border voice (mirrors the light ladder). */
+  const inkL = clampN(S.ink.L, 0.22, 0.45)
   const brand = ok(brandL, brandC, brandH)
   const brandFillL = Math.max(0.45, brandL - 0.12)
   const textC = Math.max(0.015, Math.min(0.10, brandC * 0.45))

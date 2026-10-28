@@ -189,7 +189,7 @@ function bootNote(step: string): void {
     const previous = localStorage.getItem(BOOT_LOG_KEY)
     const trail: string[] = previous !== null ? JSON.parse(previous) as string[] : []
     trail.push(`${new Date().toISOString()} ${step}`)
-    localStorage.setItem(BOOT_LOG_KEY, JSON.stringify(trail))
+    localStorage.setItem(BOOT_LOG_KEY, JSON.stringify(trail.slice(-60)))
   } catch { /* diagnostics must never break the boot */ }
 }
 
@@ -237,7 +237,17 @@ function applyStages(
   const sheetEl = injectThemeSheets()
   const baseSheetCss = Object.values(themeCss).join('\n') + '\n' + rowStyles + '\n' + brandOverrideCss
   const refreshSheets = (): void => {
-    sheetEl.textContent = baseSheetCss + '\n' + customThemesCss(themesStore.customs())
+    // A malformed custom theme must cost only ITS OWN block, never the whole
+    // sheet: the base CSS (presets, row layout, brand rules) is what keeps the
+    // interface styled at all. Deriving the customs inside their own try/catch
+    // keeps one bad document from dehydrating the entire UI.
+    let custom = ''
+    try {
+      custom = customThemesCss(themesStore.customs())
+    } catch (error) {
+      console.error('[yizi-themes] custom theme css failed', error)
+    }
+    sheetEl.textContent = baseSheetCss + '\n' + custom
   }
   bootNote('stage:sheet-start')
   guarded('emit sheets', () => { refreshSheets() })

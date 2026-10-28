@@ -22,6 +22,8 @@
 ## ✨ 特色
 
 - 🎭 **19 个主题**：从极光流光到赛博朋克霓虹，从莫兰迪高级灰到故宫朱砂，总有一款配得上你的审美
+- 🌈 **主题工作室 · 自定义主题**（0.5.6）：只选一个主题色，完整明暗两套配色**自动派生**（主色 / 墨色 / 底色浓度 / 描边风格 / 字号五个声部各自遵循预设手工调校的规律），卡片实时预览，保存后立刻出现在主题网格、选择器和 `/theme` 里（设置 → 外观 → 自定义主题）
+- 🎚️ **高级调色**（0.5.6）：想自己动手时，可覆盖墨色、底色浓度、描边风格（品牌色 / 中性墨）与明暗底色；留空即自动，不必懂 OKLCH
 - 🌗 **双模式**：每个主题都有精心调配的亮色 / 深色两套 token，跟随系统自动切换
 - 🧩 **标准插件**：标准 Cordis 插件（`dsh plugin` 安装/卸载），不修改 Harness 仓库任何源码
 - ✅ **干净 Harness 开箱即用**：风格主题由插件自实现（含持久化与 `body.theme-<id>` 应用），无需给 Harness 打任何补丁
@@ -31,6 +33,7 @@
 - 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
 - 📐 **品牌尺寸可调**（0.5.4）：左上角 Logo、品牌字样、徽章按同一倍率**整体缩放**（75%–200%，设置 → 外观 → 自定义 → 品牌尺寸），拖动即时生效、无需重启
 - 🔤 **品牌映射**（实验性，默认关闭）：把界面/输出中出现的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词（开启后也绝不改写你正在输入的内容）
+- ⌨️ **`/theme` 命令与 Doctor**（0.5.6）：输入框敲 `/theme` 直接切主题、列主题；`/theme doctor` 输出安装自检（模块命中、槽位、令牌覆盖率）
 - 📍 **随处可切换**：会话头部右上角 + 新会话（无对话）时的浮动按钮
 
 ---
@@ -73,14 +76,16 @@
 1. 下载 `dsh-yizi-themes-0.5.6.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.6/dsh-yizi-themes-0.5.6.tgz```
+curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.6/dsh-yizi-themes-0.5.6.tgz
+```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
 3. 安装：
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.6.tgz```
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.6.tgz
+```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
 > 安装到桌面版自己的 profile（`$DSH_HOME/profiles/desktop`）——web 与桌面版是两个独立 profile，互不相通。
@@ -119,8 +124,33 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 
 ### 使用
 
-- **切换主题 / 明暗**：右上角调色板按钮 + 明暗切换按钮（会话头部）；新会话（无对话内容）时以浮动按钮显示在同一位置；
+- **切换主题 / 明暗**：右上角调色板按钮 + 明暗切换按钮（会话头部）；新会话（无对话内容）时以浮动按钮显示在同一位置；也可以直接敲 `/theme`；
+- **自己做主题**：设置 → 外观 → **自定义主题**——填名称、选主题色，卡片实时预览，点「添加主题」保存；已存主题带「应用 / 编辑 / 删除」，全部即时生效，无需重启（详见下节）；
 - **自定义品牌**：设置 → 外观 → 自定义（见下节）。
+
+---
+
+## 🌈 主题工作室（自定义主题）
+
+设置 → 外观 → **自定义主题**：
+
+| 步骤 | 说明 |
+|---|---|
+| 1. 填名称 | 如「海之蓝」「樱花粉」（同名同色重复添加只会覆盖原主题，不会堆出多个） |
+| 2. 选主题色 | 一个就行——明暗两套完整配色自动派生 |
+| 3. 预览 | 卡片实时展示该配色在界面上的样子 |
+| 4. 添加主题 | 立刻出现在上方主题网格、右上角选择器和 `/theme` 里 |
+
+**高级调色**（可选，展开后可见）：想自己动手时，可覆盖
+
+| 声部 | 作用 |
+|---|---|
+| **墨色** | 第二色相：文字、Toast 与深色页面的底色都跟随它（蓝色品牌默认自动 +43° 偏紫，与预设一致） |
+| **底色浓度** | 背景染色的强度，越大越"有颜色" |
+| **描边风格** | `品牌色`（彩色描边）或 `中性墨`（中性灰描边） |
+| **亮底 / 暗底** | 直接指定明暗模式的页面底色 |
+
+任何字段留空即保持自动推导。保存后仍可再次「编辑」，删除即时生效。
 
 ---
 
@@ -198,6 +228,13 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 **Q: 装上插件后 DeepSeek Harness Desktop 起不来？**
 0.4.0 及更早的客户端 bundle 仍 `require('@deepseek-ai/dsh-client-runtime/client')`，而该包在 `dsh-client-store` 一代已被**整包删除**——桌面版的 web 引导是"任一 entry 激活失败即整体中止"，所以应用直接黑屏/打不开。0.5.0 已改用本代平台模块（`@deepseek-ai/dsh-client-store`）并适配收窄后的 `ui-theme` schema。
 已经装坏、界面进不去时：命令行执行 `dsh plugin --profile desktop remove dsh-yizi-themes`（不需要打开界面），再完全退出并重启桌面版即可恢复；然后升级到最新版（当前 0.5.6）重新安装。
+
+**Q: 装上插件后启动失败（`web boot: 1 entry did not activate` / `dsh-yizi-themes: failed`）？**
+0.5.6 起插件**不会再让启动失败**：apply 的每个阶段都隔离兜底、插槽注册幂等，被重复加载（热重载 / 组合重载）也照常工作。若仍看到该报错，说明装的是 0.5.5 及更早版本（旧包在启动早期抛错会中止整个客户端引导）——`remove` 后重装 0.5.6 即可。
+排查任何异常：浏览器 F12 → Application → Local Storage → `dsh-yizi-themes:bootlog`（最近 60 条启动轨迹，每阶段 `ok:` / `FAIL:`），`FAIL:` 一行就是根因所在阶段。
+
+**Q: 装好能启动，但整个界面样式错乱 / 控件变形 / 主题点了没反应？**
+0.5.6 已修（暗色配色推导里一个未声明变量会让整张样式表不发射，导致预设主题、行布局、品牌规则全部缺失）。确认版本 ≥ 0.5.6；若仍出现，同样看 `dsh-yizi-themes:bootlog` 里的 `FAIL:` 行。
 
 **Q: 干净 Harness（官方源码 / npm 发布的 rc.5）能用吗？**
 0.5.x 面向 `dsh-client-store` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` 桌面版）；更老的 rc.5 / rc.8 请用 0.3.x。风格主题一直由插件自实现（`localStorage` 持久化 + 自行切换 `body.theme-<id>`），无需给核心打任何补丁；明暗切换仍走核心 `ctx.theme`。

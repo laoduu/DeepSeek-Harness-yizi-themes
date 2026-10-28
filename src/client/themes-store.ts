@@ -23,7 +23,17 @@ function toDefinition(doc: CustomThemeDoc): ThemeDefinition {
   }
 }
 
-let customThemes: CustomThemeDoc[] = loadCustomThemes()
+/** Persisted custom docs loaded once; a broken store must never break the boot. */
+function safeLoadCustomThemes(): CustomThemeDoc[] {
+  try {
+    return loadCustomThemes()
+  } catch (error) {
+    console.error('[yizi-themes] custom theme load failed', error)
+    return []
+  }
+}
+
+let customThemes: CustomThemeDoc[] = safeLoadCustomThemes()
 let cache: ThemeDefinition[] = [...THEMES, ...customThemes.map(toDefinition)]
 const listeners = new Set<() => void>()
 

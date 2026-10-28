@@ -12,6 +12,7 @@ import { AppearanceRow } from './AppearanceRow.tsx'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
 import type { CustomBrandConfig, ThemePreference } from './theme-settings.ts'
+import { DEFAULT_CUSTOM_BRAND } from './theme-settings.ts'
 import { loadBrand, saveBrand } from './brand-persistence.ts'
 import { zh, en, type ThemeKey } from './locales.ts'
 import * as themeCss from './themes.ts'
@@ -174,7 +175,28 @@ function buildInjected(
   }
 }
 
+/** LocalStorage key of the boot breadcrumb trail (diagnostics only). */
+const BOOT_LOG_KEY = 'dsh-yizi-themes:bootlog'
+
+/**
+ * Append one breadcrumb to a localStorage trail. Written to error level too,
+ * because the desktop only captures error-level renderer console output; the
+ * localStorage copy survives even a failed boot and can be read from the
+ * Electron LevelDB afterwards.
+ */
+function bootNote(step: string): void {
+  try {
+    const previous = localStorage.getItem(BOOT_LOG_KEY)
+    const trail: string[] = previous !== null ? JSON.parse(previous) as string[] : []
+    trail.push(`${new Date().toISOString()} ${step}`)
+    localStorage.setItem(BOOT_LOG_KEY, JSON.stringify(trail))
+  } catch { /* diagnostics must never break the boot */ }
+}
+
 export function apply(ctx: Context): void {
+  // Breadcrumb BEFORE anything can throw: if this never lands, the module
+  // failed to evaluate and the entry failed at import level.
+  bootNote('apply:entered')
   /**
    * Hardening: a third-party UI plugin must never take the whole app boot down.
    * Cordis marks a fiber FAILED when `apply` (or an apply-time effect) throws,
@@ -187,18 +209,38 @@ export function apply(ctx: Context): void {
   const guarded = (label: string, run: () => unknown): void => {
     try {
       run()
+      bootNote(`ok:${label}`)
     } catch (error) {
+      bootNote(`FAIL:${label}: ${(error as Error)?.message ?? String(error)}`)
       console.error(`[yizi-themes] ${label} failed`, error)
     }
   }
 
+  try {
+    applyStages(ctx, guarded, bootNote)
+  } catch (error) {
+    // The outer net: an unguarded setup line threw. The fiber keeps ACTIVE so
+    // the app still boots; the breadcrumb names the exact stage.
+    bootNote(`FATAL: ${(error as Error)?.message ?? String(error)} | ${(error as Error)?.stack ?? ''}`)
+    console.error('[yizi-themes] fatal apply failure', error)
+  }
+  bootNote('apply:returned')
+}
+
+/** The real body; every stage is individually guarded by the caller. */
+function applyStages(
+  ctx: Context,
+  guarded: (label: string, run: () => unknown) => void,
+  bootNote: (step: string) => void,
+): void {
   // ── Inject all style sheets (base + Theme Studio customs, kept in sync) ─
   const sheetEl = injectThemeSheets()
   const baseSheetCss = Object.values(themeCss).join('\n') + '\n' + rowStyles + '\n' + brandOverrideCss
   const refreshSheets = (): void => {
     sheetEl.textContent = baseSheetCss + '\n' + customThemesCss(themesStore.customs())
   }
-  refreshSheets()
+  bootNote('stage:sheet-start')
+  guarded('emit sheets', () => { refreshSheets() })
   guarded('custom-theme sheets', () => {
     ctx.effect(() => themesStore.subscribe(() => {
       try {
@@ -362,7 +404,14 @@ export function apply(ctx: Context): void {
   // the core `ui-theme` schema this plugin used to write through no longer
   // carries a `customBrand` field, so a plugin-owned browser-local document is
   // the stable seam across Harness reorganizations of the settings API.
-  let customBrand: CustomBrandConfig = loadBrand()
+  let customBrand: CustomBrandConfig
+  try {
+    customBrand = loadBrand()
+  } catch (error) {
+    bootNote('FAIL:load brand')
+    console.error('[yizi-themes] brand load failed', error)
+    customBrand = { ...DEFAULT_CUSTOM_BRAND }
+  }
   // Seed the reactive brand store so the slot occupants render immediately.
   brandStore.set(customBrand)
   const setCustomBrand = (patch: Partial<CustomBrandConfig>) => {

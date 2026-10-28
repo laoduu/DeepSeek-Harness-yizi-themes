@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-10-28 · v0.6.3：apply 抛异常 = 整个应用拒绝启动——插件必须"炸不死宿主"（用户报"启动失败 + 控制模块全消失"）
+
+### 事故链条
+
+用户重启后：`web boot: 1 entry did not activate` / `dsh-yizi-themes: failed`，应用启动中止；禁用插件才恢复；手动启用后主题控制模块全部不见。
+
+读 rc.3 `packages/client/web/src/boot-client.ts` 的 `assertEntriesActive`：fiber 状态非 active 即视为启动失败。`apply()`（及其**立即执行**的 effect）一抛异常，fiber 就是 failed。
+
+### 定位方法：用真实 SlotCore 做最小复现
+
+之前所有 jsdom 复现都用桩 slots，恰好把真实校验全绕过了——**唯一没被真实覆盖的服务就是本次的凶器**。改用真实 `packages/client/ui-slots/src/index.ts` 的 `SlotCore`（零运行时依赖，可直接打包）加一层忠实的最小 slots 服务（声明表 + inject 观察者），跑四种组合：
+
+| 场景 | 结果 |
+|---|---|
+| 单次 apply，槽先声明（boot 顺序） | 0 错误，行 1 份、品牌座位 1 份 |
+| 单次 apply，槽后声明 | 0 错误，同上 |
+| **双次 apply，槽先声明** | `single slot "sidebar.brand.mark" already has a registration at priority -100` |
+| **双次 apply，槽后声明** | `list slot "settings.general.item" already has an entry with id "yizi-appearance"` |
+
+**结论**：单次 apply 干净；第二次 apply 才会撞注册。品牌座位注册在 apply 早期（第 260 行）、行注册在尾部（第 426 行）——**一次 throw 直接吞掉后面的行注册**，"启动失败"与"控制模块消失"是同一根因的两个症状。
+
+### 修复：guarded 阶段 + 幂等注册
+
+- `apply` 内每个阶段 `guarded(label, run)`：失败只记录，不外抛。
+- 品牌三座位 + 两处行注册：已被占用 → 告警并跳过（返回空 disposer），第二次 apply 无害。
+- `push`/`sync` 改为函数声明（提升），订阅回调内再包 try/catch，消除早触发 TDZ。
+
+实测（真实 SlotCore）：单次 0 错误；双次 0 错误，行/座位各保留 1 份。
+
+### 沉淀
+
+- **第三方插件对宿主的契约是"永不抛"**：一个外观插件没有资格让整个客户端启动失败。启动审计是零容忍的。
+- **桩服务会隐藏真实校验**：本次若不是把真实 `SlotCore` 接进来，永远只能猜。最贵的服务最该用真的。
+- 幂等注册顺带覆盖了真实场景：HMR 热重载、组合重载、重复装载。
+
+---
+
 ## 2026-10-28 · v0.6.2：内联样式遮蔽——自定义主题「全黑没生效」的真正根因（用户报"海之蓝没有一点蓝"）
 
 ### 踩坑：三层"看起来都对"，级联层输了

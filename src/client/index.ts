@@ -175,6 +175,23 @@ function buildInjected(
 }
 
 export function apply(ctx: Context): void {
+  /**
+   * Hardening: a third-party UI plugin must never take the whole app boot down.
+   * Cordis marks a fiber FAILED when `apply` (or an apply-time effect) throws,
+   * and the client boot audit then aborts startup. Every stage below is
+   * therefore isolated: a stage failure is logged and the remaining stages
+   * (above all the Appearance row registration) still run. This also makes a
+   * SECOND apply (hot reload, composition reload, double load) harmless —
+   * registrations are duplicate-tolerant.
+   */
+  const guarded = (label: string, run: () => unknown): void => {
+    try {
+      run()
+    } catch (error) {
+      console.error(`[yizi-themes] ${label} failed`, error)
+    }
+  }
+
   // ── Inject all style sheets (base + Theme Studio customs, kept in sync) ─
   const sheetEl = injectThemeSheets()
   const baseSheetCss = Object.values(themeCss).join('\n') + '\n' + rowStyles + '\n' + brandOverrideCss
@@ -182,12 +199,18 @@ export function apply(ctx: Context): void {
     sheetEl.textContent = baseSheetCss + '\n' + customThemesCss(themesStore.customs())
   }
   refreshSheets()
-  ctx.effect(() => themesStore.subscribe(() => {
-    // New/removed/edited custom theme: refresh the emitted CSS AND the row
-    // store so the grid, the pickers, and /theme all see the change.
-    refreshSheets()
-    sync()
-  }), 'dsh-yizi-themes: custom-theme sheets')
+  guarded('custom-theme sheets', () => {
+    ctx.effect(() => themesStore.subscribe(() => {
+      try {
+        // New/removed/edited custom theme: refresh the emitted CSS AND the row
+        // store so the grid, the pickers, and /theme all see the change.
+        refreshSheets()
+        sync()
+      } catch (error) {
+        console.error('[yizi-themes] custom-theme sync failed', error)
+      }
+    }), 'dsh-yizi-themes: custom-theme sheets')
+  })
 
   const runtime = ctx.theme as ThemeRuntime
 
@@ -197,7 +220,7 @@ export function apply(ctx: Context): void {
   // otherwise implements it itself (localStorage + body.theme-<id> class).
   const themeBackend = createThemeBackend(runtime, ctx)
   // Restore the persisted theme on boot (plugin path only).
-  themeBackend.reassert()
+  guarded('theme restore', () => { themeBackend.reassert() })
 
   // ── /theme slash command (official ui-commands surface) ────────────────
   // Registered as a popupSelect contribution: both style themes and the
@@ -205,14 +228,16 @@ export function apply(ctx: Context): void {
   // core without the commandUi service the inner fiber stays PENDING and the
   // plugin activates without the command — no crash path.
   const t = ctx.locale.bind(SETTINGS_NS)
-  registerThemeCommand(ctx, {
-    backend: themeBackend,
-    themes: () => themesStore.all(),
-    preference: () => {
-      try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
-    },
-    setPreference: (preference) => { runtime.setTheme(preference) },
-    translate: (key) => t(key as ThemeKey),
+  guarded('theme command', () => {
+    registerThemeCommand(ctx, {
+      backend: themeBackend,
+      themes: () => themesStore.all(),
+      preference: () => {
+        try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
+      },
+      setPreference: (preference) => { runtime.setTheme(preference) },
+      translate: (key) => t(key as ThemeKey),
+    })
   })
 
   // ── Doctor self-check inputs (used by the Appearance row's diagnostics) ─
@@ -232,7 +257,9 @@ export function apply(ctx: Context): void {
   // are the designed deployment-branding surface, so this path is stable
   // across Harness upgrades. On cores without those slots the inject callbacks
   // never fire and the legacy DOM path (brand-apply.ts) stays active.
-  ctx.effect(() => registerBrandSlots(ctx.slots), 'dsh-yizi-themes: brand slots')
+  guarded('brand slots', () => {
+    ctx.effect(() => registerBrandSlots(ctx.slots), 'dsh-yizi-themes: brand slots')
+  })
 
   // ── Register session-header controls (theme picker + mode toggle) ──────
   // The utilities list renders at the right edge of the session header title
@@ -244,23 +271,36 @@ export function apply(ctx: Context): void {
     setThemeId: (id: string) => { themeBackend.setThemeId(id) },
     subscribe: (listener: () => void) => themeBackend.subscribe(listener),
   })
-  ctx.slots.inject(
-    'conversation.session.header.utilities',
-    () => ctx.slots.register({
-      name: 'conversation.session.header.utilities',
-      id: 'yizi-header-controls',
-      order: 10,
-      locale: SETTINGS_NS,
-      inject: headerFace,
-    }, HeaderControls),
-  )
+  guarded('header controls', () => {
+    ctx.slots.inject(
+      'conversation.session.header.utilities',
+      () => {
+        try {
+          return ctx.slots.register({
+            name: 'conversation.session.header.utilities',
+            id: 'yizi-header-controls',
+            order: 10,
+            locale: SETTINGS_NS,
+            inject: headerFace,
+          }, HeaderControls)
+        } catch (error) {
+          // A second apply (hot reload / double load) finds the id taken.
+          console.warn('[yizi-themes] header controls already registered', error)
+          return () => {}
+        }
+      },
+    )
+  })
 
   // ── Floating controls for the blank / new-session state ────────────────
   // The session header (and with it the slot controls) is hidden while a
   // session is blank; mount the same controls fixed at the top right, shown
   // only while the hero is present and hidden once a session header exists.
-  const floating = mountFloatingControls(headerFace())
-  ctx.effect(() => () => floating.dispose(), 'dsh-yizi-themes: floating controls')
+  let floating: ReturnType<typeof mountFloatingControls> | undefined
+  guarded('floating controls', () => {
+    floating = mountFloatingControls(headerFace())
+    ctx.effect(() => () => floating?.dispose(), 'dsh-yizi-themes: floating controls')
+  })
 
   // ── Self-register any selectable themes the core registry lacks ────────
   // Only relevant on cores that HAVE the style-theme API (coreThemeApi): a
@@ -268,20 +308,22 @@ export function apply(ctx: Context): void {
   // themes registered (shipped + Theme Studio customs), so setThemeId
   // validation and the theme grid always see every id. The plugin path needs
   // no registration.
-  if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
-    const existing = new Set(runtime.getTheme().themes.map(t => t.id))
-    for (const theme of themesStore.all()) {
-      if (existing.has(theme.id)) continue
-      runtime.register({
-        id: theme.id,
-        colorScheme: theme.colorScheme,
-        tokens: {},
-        name: theme.name,
-        swatch: theme.swatch,
-        desc: theme.desc,
-      })
+  guarded('core theme registration', () => {
+    if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
+      const existing = new Set(runtime.getTheme().themes.map(t => t.id))
+      for (const theme of themesStore.all()) {
+        if (existing.has(theme.id)) continue
+        runtime.register({
+          id: theme.id,
+          colorScheme: theme.colorScheme,
+          tokens: {},
+          name: theme.name,
+          swatch: theme.swatch,
+          desc: theme.desc,
+        })
+      }
     }
-  }
+  })
 
   // ── Theme Studio document handlers (persist + sheets + core registry) ──
   const saveCustomTheme = (doc: CustomThemeDoc): void => {
@@ -335,11 +377,11 @@ export function apply(ctx: Context): void {
     // Push the edit into the row store immediately so the controlled inputs
     // re-render with the new value instead of snapping back (the store is the
     // row's only data source and only syncs on theme/change otherwise).
-    push(customBrand)
+    guarded('brand row push', () => { push(customBrand) })
     // Publish to the slot occupants (sidebar / hero marks + name) live.
     brandStore.set(customBrand)
     // Apply the brand to the sidebar/hero DOM live.
-    applyBrand(customBrand)
+    guarded('brand apply', () => { applyBrand(customBrand) })
   }
 
   // ── Register our AppearanceRow as an ADDITIONAL general item ───────────
@@ -349,23 +391,27 @@ export function apply(ctx: Context): void {
   let bound: ReturnType<typeof store['create']>['actions'] | undefined
   let syncSeq = 0
   /** Mirror one settings snapshot into the row store (bumped seq skips staleness). */
-  const push = (settings: CustomBrandConfig): void => {
+  function push(settings: CustomBrandConfig): void {
     const core = readCoreTheme(ctx)
     // Theme id comes from the style-theme backend (core field or localStorage),
     // so the grid highlight matches reality on every Harness build; the theme
     // list includes the Theme Studio customs so the grid shows them too.
     bound?.sync(core.preference, themeBackend.readThemeId(), themesStore.all(), settings, ++syncSeq)
   }
-  const sync = (): void => {
-    push(customBrand)
+  function sync(): void {
+    guarded('row sync', () => { push(customBrand) })
   }
   // Apply the persisted brand on boot (slot path renders from brandStore; the
   // legacy DOM path needs this first pass).
-  applyBrand(customBrand)
+  guarded('brand boot apply', () => { applyBrand(customBrand) })
   // Re-sync on both core theme/change (preference, core-path theme id) and
   // local emitter changes (plugin-path theme id).
-  ctx.effect(() => themeBackend.subscribe(sync), 'dsh-yizi-themes: theme state adoption')
-  ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'dsh-yizi-themes: row dictionaries')
+  guarded('theme state adoption', () => {
+    ctx.effect(() => themeBackend.subscribe(sync), 'dsh-yizi-themes: theme state adoption')
+  })
+  guarded('row dictionaries', () => {
+    ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'dsh-yizi-themes: row dictionaries')
+  })
 
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
     bound = actions
@@ -381,26 +427,43 @@ export function apply(ctx: Context): void {
       removeCustomTheme,
     )
   }
-  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
-    name: 'settings.general.item',
-    id: 'yizi-appearance',
-    order: 20,
-    store,
-    locale: SETTINGS_NS,
-    inject: injected,
-  }, AppearanceRow))
+  // The row is the whole point of the plugin: register it LAST but tolerate a
+  // second apply (the id taken by a previous fiber) instead of failing.
+  guarded('appearance row', () => {
+    ctx.slots.inject('settings.general.item', () => {
+      try {
+        return ctx.slots.register({
+          name: 'settings.general.item',
+          id: 'yizi-appearance',
+          order: 20,
+          store,
+          locale: SETTINGS_NS,
+          inject: injected,
+        }, AppearanceRow)
+      } catch (error) {
+        console.warn('[yizi-themes] appearance row already registered', error)
+        return () => {}
+      }
+    })
+  })
 
   // ── Output-time brand-text replacement + DOM brand application ─────────
-  ctx.effect(() => observeBrandReplacement(
-    () => customBrand.mappings,
-    () => {
-      applyBrand(customBrand)
-      // Plugin-path themes re-assert the body class after any DOM churn.
-      themeBackend.reassert()
-      // Show the floating controls only while the hero (blank session) is up.
-      floating.sync()
-    },
-  ), 'dsh-yizi-themes: brand replacement observer')
+  guarded('brand replacement observer', () => {
+    ctx.effect(() => observeBrandReplacement(
+      () => customBrand.mappings,
+      () => {
+        try {
+          applyBrand(customBrand)
+          // Plugin-path themes re-assert the body class after any DOM churn.
+          themeBackend.reassert()
+          // Show the floating controls only while the hero (blank session) is up.
+          floating?.sync()
+        } catch (error) {
+          console.error('[yizi-themes] brand re-apply failed', error)
+        }
+      },
+    ), 'dsh-yizi-themes: brand replacement observer')
+  })
 }
 
 

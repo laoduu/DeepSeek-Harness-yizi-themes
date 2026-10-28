@@ -172,14 +172,29 @@ export function registerBrandSlots(slots: BrandSlots): () => void {
     markModernBrandPath()
     cleanupLegacyBrandDom()
   }
+  /**
+   * Register one seat, tolerating a duplicate: a second apply of the plugin
+   * (hot reload, composition reload, double load) finds a single-slot seat
+   * already occupied by the previous fiber's entry, and that throw must not
+   * fail the plugin fiber (it would abort the whole app boot). The existing
+   * entry keeps rendering; we simply contribute nothing.
+   */
+  const claim = (name: string, component: unknown): (() => void) => {
+    try {
+      return slots.register({ name, priority: BRAND_SLOT_PRIORITY }, component)
+    } catch (error) {
+      console.warn(`[yizi-themes] brand seat "${name}" already claimed`, error)
+      return () => {}
+    }
+  }
   const disposers: Array<() => void> = []
   disposers.push(slots.inject('sidebar.brand.mark', () => {
     activate()
-    return slots.register({ name: 'sidebar.brand.mark', priority: BRAND_SLOT_PRIORITY }, YiziBrandMark)
+    return claim('sidebar.brand.mark', YiziBrandMark)
   }))
   disposers.push(slots.inject('sidebar.brand.name', () => {
     activate()
-    return slots.register({ name: 'sidebar.brand.name', priority: BRAND_SLOT_PRIORITY }, YiziBrandName)
+    return claim('sidebar.brand.name', YiziBrandName)
   }))
   disposers.push(slots.inject('conversation.hero.brand.mark', () => {
     activate()
@@ -187,10 +202,7 @@ export function registerBrandSlots(slots: BrandSlots): () => void {
     const syncHero = (logo: string): void => {
       if (logo !== '') {
         if (disposeHero === null) {
-          disposeHero = slots.register(
-            { name: 'conversation.hero.brand.mark', priority: BRAND_SLOT_PRIORITY },
-            YiziHeroMark,
-          )
+          disposeHero = claim('conversation.hero.brand.mark', YiziHeroMark)
         }
       } else if (disposeHero !== null) {
         disposeHero()

@@ -14,7 +14,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type { ThemeBackend } from './theme-backend.ts'
-import { THEMES } from './themes-list.ts'
+import type { ThemeDefinition } from './themes-list.ts'
 import { DEFAULT_THEME } from './theme-settings.ts'
 import { PaletteIcon } from './PaletteIcon.tsx'
 
@@ -53,6 +53,8 @@ export interface CommandUiLike {
 export interface ThemeCommandDeps {
   /** Style-theme backend (read the current id / select one). */
   readonly backend: ThemeBackend
+  /** Every selectable theme (shipped + Theme Studio customs), read live. */
+  themes(): readonly ThemeDefinition[]
   /** Read the current light/dark preference. */
   preference(): string
   /** Set the light/dark preference. */
@@ -96,6 +98,7 @@ export function registerThemeCommand(ctx: Context, deps: ThemeCommandDeps): void
         options: async () => {
           const themeId = deps.backend.readThemeId()
           const preference = deps.preference()
+          const themes = deps.themes()
           return [
             {
               id: DEFAULT_THEME,
@@ -104,7 +107,7 @@ export function registerThemeCommand(ctx: Context, deps: ThemeCommandDeps): void
               group: { ...STYLE_GROUP, label: t('group.style') },
               active: themeId === DEFAULT_THEME || themeId === '',
             },
-            ...THEMES.map((theme) => ({
+            ...themes.map((theme) => ({
               id: theme.id,
               label: theme.name,
               detail: theme.desc,

@@ -11,7 +11,6 @@ import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AppearanceRow } from './AppearanceRow.tsx'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
-import { THEMES } from './themes-list.ts'
 import type { CustomBrandConfig, ThemePreference } from './theme-settings.ts'
 import { loadBrand, saveBrand } from './brand-persistence.ts'
 import { zh, en, type ThemeKey } from './locales.ts'
@@ -29,6 +28,10 @@ import { brandStore } from './brand-store.ts'
 import { registerThemeCommand } from './theme-commands.ts'
 import { runDoctorChecks } from './doctor.tsx'
 import type { DoctorReport } from './doctor.tsx'
+import { themesStore } from './themes-store.ts'
+import { customThemesCss } from './custom-themes.ts'
+import type { CustomThemeDoc } from './custom-themes.ts'
+import { DEFAULT_THEME } from './theme-settings.ts'
 
 /** Plugin identity. */
 export const name = 'dsh-yizi-themes'
@@ -50,15 +53,15 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Inject all style sheets as a single <style> tag (theme + row + brand overrides). */
-function injectThemeSheets(): void {
+/** Inject all style sheets as a single <style> tag; returns the element. */
+function injectThemeSheets(): HTMLStyleElement {
   const id = 'dsw-yizi-themes-sheets'
-  if (document.getElementById(id)) return
+  const existing = document.getElementById(id)
+  if (existing instanceof HTMLStyleElement) return existing
   const style = document.createElement('style')
   style.id = id
-  const css = Object.values(themeCss).join('\n') + '\n' + rowStyles + '\n' + brandOverrideCss
-  style.textContent = css
   document.head.append(style)
+  return style
 }
 
 /** Read the core theme state (preference + optional style-theme id) from ctx.theme. */
@@ -157,17 +160,34 @@ function buildInjected(
   setSettings: (patch: Partial<CustomBrandConfig>) => void,
   writeThemeId: (id: string) => void,
   runDoctor: () => DoctorReport,
+  listCustomThemes: () => CustomThemeDoc[],
+  saveCustomTheme: (doc: CustomThemeDoc) => void,
+  removeCustomTheme: (id: string) => void,
 ): AppearanceRowInjected {
   return {
     setThemeId: (id) => { writeThemeId(id) },
     setCustomBrand: (patch) => { setSettings(patch) },
     runDoctor,
+    listCustomThemes,
+    saveCustomTheme,
+    removeCustomTheme,
   }
 }
 
 export function apply(ctx: Context): void {
-  // ── Inject all style sheets ────────────────────────────────────────────
-  injectThemeSheets()
+  // ── Inject all style sheets (base + Theme Studio customs, kept in sync) ─
+  const sheetEl = injectThemeSheets()
+  const baseSheetCss = Object.values(themeCss).join('\n') + '\n' + rowStyles + '\n' + brandOverrideCss
+  const refreshSheets = (): void => {
+    sheetEl.textContent = baseSheetCss + '\n' + customThemesCss(themesStore.customs())
+  }
+  refreshSheets()
+  ctx.effect(() => themesStore.subscribe(() => {
+    // New/removed/edited custom theme: refresh the emitted CSS AND the row
+    // store so the grid, the pickers, and /theme all see the change.
+    refreshSheets()
+    sync()
+  }), 'dsh-yizi-themes: custom-theme sheets')
 
   const runtime = ctx.theme as ThemeRuntime
 
@@ -187,6 +207,7 @@ export function apply(ctx: Context): void {
   const t = ctx.locale.bind(SETTINGS_NS)
   registerThemeCommand(ctx, {
     backend: themeBackend,
+    themes: () => themesStore.all(),
     preference: () => {
       try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
     },
@@ -241,14 +262,15 @@ export function apply(ctx: Context): void {
   const floating = mountFloatingControls(headerFace())
   ctx.effect(() => () => floating.dispose(), 'dsh-yizi-themes: floating controls')
 
-  // ── Self-register any shipped themes the core registry lacks ───────────
+  // ── Self-register any selectable themes the core registry lacks ────────
   // Only relevant on cores that HAVE the style-theme API (coreThemeApi): a
   // core that gained setThemeId but dropped the built-in list still gets our
-  // 19 registered, so setThemeId validation and the theme grid always see
-  // every shipped id. The plugin path needs no registration.
+  // themes registered (shipped + Theme Studio customs), so setThemeId
+  // validation and the theme grid always see every id. The plugin path needs
+  // no registration.
   if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
     const existing = new Set(runtime.getTheme().themes.map(t => t.id))
-    for (const theme of THEMES) {
+    for (const theme of themesStore.all()) {
       if (existing.has(theme.id)) continue
       runtime.register({
         id: theme.id,
@@ -259,6 +281,32 @@ export function apply(ctx: Context): void {
         desc: theme.desc,
       })
     }
+  }
+
+  // ── Theme Studio document handlers (persist + sheets + core registry) ──
+  const saveCustomTheme = (doc: CustomThemeDoc): void => {
+    const customs = themesStore.customs()
+    const index = customs.findIndex((entry) => entry.id === doc.id)
+    if (index >= 0) customs[index] = doc
+    else customs.push(doc)
+    themesStore.set(customs)
+    if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
+      try {
+        runtime.register({
+          id: doc.id,
+          colorScheme: 'light',
+          tokens: {},
+          name: doc.name,
+          swatch: [doc.lightBg, doc.accent],
+          desc: '',
+        })
+      } catch { /* already registered under this id */ }
+    }
+  }
+  const removeCustomTheme = (id: string): void => {
+    themesStore.set(themesStore.customs().filter((entry) => entry.id !== id))
+    // Deleting the active theme reverts to the default palette.
+    if (themeBackend.readThemeId() === id) themeBackend.setThemeId(DEFAULT_THEME)
   }
 
   // ── Custom-brand configuration (browser-local) ─────────────────────────
@@ -299,8 +347,9 @@ export function apply(ctx: Context): void {
   const push = (settings: CustomBrandConfig): void => {
     const core = readCoreTheme(ctx)
     // Theme id comes from the style-theme backend (core field or localStorage),
-    // so the grid highlight matches reality on every Harness build.
-    bound?.sync(core.preference, themeBackend.readThemeId(), THEMES, settings, ++syncSeq)
+    // so the grid highlight matches reality on every Harness build; the theme
+    // list includes the Theme Studio customs so the grid shows them too.
+    bound?.sync(core.preference, themeBackend.readThemeId(), themesStore.all(), settings, ++syncSeq)
   }
   const sync = (): void => {
     push(customBrand)
@@ -316,7 +365,16 @@ export function apply(ctx: Context): void {
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
     bound = actions
     sync()
-    return buildInjected(ctx, customBrand, setCustomBrand, (id) => themeBackend.setThemeId(id), runDoctor)
+    return buildInjected(
+      ctx,
+      customBrand,
+      setCustomBrand,
+      (id) => themeBackend.setThemeId(id),
+      runDoctor,
+      () => themesStore.customs(),
+      saveCustomTheme,
+      removeCustomTheme,
+    )
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',

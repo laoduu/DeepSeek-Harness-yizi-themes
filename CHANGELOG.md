@@ -1,5 +1,26 @@
 # 版本日志 / Changelog
 
+## 0.6.0 — 2026-10-28
+
+> **Theme Studio：自定义主题编辑器**（选主题色 → 自动派生完整亮/暗两套配色）+ **主题卡片升级为迷你 mock UI 预览** + **排版跟随核心字号设置**。
+
+### 新增：Theme Studio（自定义主题编辑器）
+
+- **入口**：设置 → 外观 → 自定义主题。三个输入：**主题色**（accent）+ 亮色底 + 暗色底（默认从主题色自动派生，可手动覆盖，移动主题色时未手改的底色跟随）；实时迷你 mock 预览；保存后出现在主题网格、右上角/浮动选择器、`/theme` 命令三处，持久化在 localStorage（`dsh-yizi-themes:customThemes`）。
+- **派生引擎**（`custom-themes.ts`）：从 accent + 底色按 19 套内置主题的配色关系推导整套 62 变量 × 2 模式的 `--dsw-alias-*` 覆盖块（比例经 `academic` 表反推验证：暗色品牌 = accent + 42% 白 = academic 的 #5a7ce3 逐位一致；亮暗层阶梯、边框 alpha 阶、滚动条/浮层同理）。产出 `body.theme-custom-<id>` + `[data-ds-dark-theme]` 伴块——与内置 sheet 同构，brand-overrides 的别名级联自动补全其余推导令牌。
+- **接线**：`themes-store.ts` 统一注册表（内置 + 自定义，缓存快照供 `useSyncExternalStore`）；主题后端的 body-class 清理扩展 `theme-custom-*` 前缀；核心路径（`coreThemeApi`）保存时同步 `runtime.register`；删除激活中的主题自动回落 default。
+
+### 变更：主题卡片迷你 mock UI 预览
+
+- 主题卡片的色条升级为**迷你应用窗口**：品牌栏（主题色圆点 + 两根导航条）+ 会话区（标题行 + 右侧主题色气泡 + 左侧中性气泡）。所有内部色调由组件用 CSS `color-mix` 从 swatch 两色现场推导——一套规则同时服务亮/暗 swatch，无需每主题额外数据。
+
+### 修复：设置行排版不跟随核心字号设置
+
+- **根因**：核心 0.2.1 的字号轴把 `--dsh-content-font-size`（10–22px，默认 14）写在 body 内联样式，`gradient-shadow-text.css` 派生 `--dsh-content-font-delta`（设置−14）驱动全 UI 字号阶梯；但核心自己的设置行也是固定 px——插件行沿用同样的固定 14/13/12/11px，用户把字号调小后插件文字显得明显偏大。
+- **修复**：行内所有 font-size/line-height 改为 `calc(原px + var(--dsh-content-font-delta, 0px))`（代码输入框改跟 `--dsh-code-font-delta`）。**默认设置下逐像素等于旧值**（delta=0），调小时整行同步缩小，与核心行为一致；0px 回退保持老核心不变。
+
+---
+
 ## 0.5.5 — 2026-10-28
 
 > 两个**纯官方扩展面**的新功能：`/theme` 斜杠命令（输入框直接切换主题/明暗）+ 运行时自检「诊断」面板。零新增脆弱钩子；不含 ui-commands 的核心自动跳过命令注册，不影响激活。

@@ -2,6 +2,21 @@
 export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at runtime). */
 
 .dsw-yizi-group {
+  /* Typography scale — follows the user's content font-size setting through
+     the core's delta variable (--dsh-content-font-delta = setting − 14px,
+     defined on body by the core token sheet). Every ratio below renders
+     EXACTLY the legacy fixed px at the default setting (14), and scales with
+     the setting otherwise; the 0px fallback keeps old cores unchanged. */
+  --dsw-yizi-fs-xl: calc(14px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-fs-lg: calc(13px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-fs-md: calc(12px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-fs-sm: calc(11px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-lh-xl: calc(22px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-lh-lg: calc(20px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-lh-md: calc(18px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-lh-sm: calc(17px + var(--dsh-content-font-delta, 0px));
+  --dsw-yizi-lh-xs: calc(16px + var(--dsh-content-font-delta, 0px));
+
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -11,9 +26,9 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
 
 .dsw-yizi-title,
 .dsw-yizi-section-title {
-  font-size: 14px;
+  font-size: var(--dsw-yizi-fs-xl);
   font-weight: 400;
-  line-height: 22px;
+  line-height: var(--dsw-yizi-lh-xl);
   color: var(--dsw-alias-label-primary);
 }
 
@@ -52,22 +67,15 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.dsw-yizi-swatch {
-  display: block;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border-l1);
-}
-
 .dsw-yizi-card-label {
-  font-size: 13px;
+  font-size: var(--dsw-yizi-fs-lg);
   font-weight: 500;
-  line-height: 20px;
+  line-height: var(--dsw-yizi-lh-lg);
 }
 
 .dsw-yizi-card-desc {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-xs);
   color: var(--dsw-alias-label-secondary);
 }
 
@@ -84,9 +92,9 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
 }
 
 .dsw-yizi-field-label {
-  font-size: 13px;
+  font-size: var(--dsw-yizi-fs-lg);
   font-weight: 500;
-  line-height: 20px;
+  line-height: var(--dsw-yizi-lh-lg);
   color: var(--dsw-alias-label-primary);
 }
 
@@ -98,16 +106,16 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
 
 .dsw-yizi-field-hint {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
   color: var(--dsw-alias-label-secondary);
 }
 
 /* Subtle one-liner guidance under the logo input (light small print). */
 .dsw-yizi-field-hint-subtle {
   margin: 0;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-sm);
   color: var(--dsw-alias-label-caption);
 }
 
@@ -120,8 +128,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   border-radius: 8px;
   background: var(--dsw-alias-bg-layer-1);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--dsw-yizi-fs-xl);
+  line-height: var(--dsw-yizi-lh-xl);
   color: var(--dsw-alias-label-primary);
   outline: none;
 }
@@ -135,7 +143,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   resize: vertical;
   min-height: 60px;
   font-family: var(--ds-font-family-code, monospace);
-  font-size: 12px;
+  /* Code content follows the code-size setting (11px base), not the text one. */
+  font-size: calc(12px + var(--dsh-code-font-delta, 0px));
 }
 
 .dsw-yizi-preview-wrap {
@@ -149,8 +158,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
 }
 
 .dsw-yizi-preview-label {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-xs);
   color: var(--dsw-alias-label-caption);
 }
 
@@ -179,8 +188,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--dsw-yizi-fs-lg);
+  line-height: var(--dsw-yizi-lh-lg);
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
 }
@@ -207,8 +216,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   flex: none;
   min-width: 44px;
   text-align: right;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
   font-variant-numeric: tabular-nums;
   color: var(--dsw-alias-label-secondary);
 }
@@ -224,8 +233,8 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
   color: var(--dsw-alias-label-secondary);
 }
 
@@ -253,8 +262,8 @@ button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   align-items: center;
   gap: 6px;
   padding: 10px 0;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--dsw-yizi-fs-lg);
+  line-height: var(--dsw-yizi-lh-lg);
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
   list-style: none;
@@ -290,8 +299,8 @@ button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   background: transparent;
   color: var(--dsw-alias-label-primary);
   font: inherit;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--dsw-yizi-fs-lg);
+  line-height: var(--dsw-yizi-lh-lg);
   cursor: pointer;
 }
 
@@ -312,8 +321,8 @@ button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
 }
 
 .dsw-yizi-doctor-status {
@@ -357,12 +366,190 @@ button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   list-style: none;
 }
 
-.dsw-yizi-doctor-gap-chip {
-  padding: 1px 6px;
+/* Mini mock-UI theme preview: a tiny app window (brand rail + chat area)
+   painted from the theme's swatch pair; the inner tones are color-mix'd
+   inline by the component, so one rule set serves light and dark. */
+.dsw-yizi-mock {
+  display: flex;
+  overflow: hidden;
+  height: 40px;
   border: 1px solid var(--dsw-alias-border-l1);
-  border-radius: 6px;
-  font-size: 11px;
-  line-height: 16px;
+  border-radius: 8px;
+}
+
+.dsw-yizi-mock-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 16px;
+  padding-top: 4px;
+}
+
+.dsw-yizi-mock-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dsw-yizi-mock-bar {
+  flex: none;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.dsw-yizi-mock-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 5px 6px 4px;
+}
+
+.dsw-yizi-mock-line {
+  display: block;
+  flex: none;
+  width: 55%;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.dsw-yizi-mock-bubble {
+  display: block;
+  align-self: flex-end;
+  width: 46%;
+  height: 6px;
+  border-radius: 4px 4px 2px 4px;
+}
+
+.dsw-yizi-mock-bubble.left {
+  align-self: flex-start;
+  width: 58%;
+  border-radius: 4px 4px 4px 2px;
+}
+
+/* ── Theme Studio (custom themes) ────────────────────────────────────── */
+
+.dsw-yizi-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+}
+
+.dsw-yizi-studio-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dsw-yizi-studio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dsw-yizi-studio-name {
+  flex: 1;
+}
+
+.dsw-yizi-studio-name + .dsw-yizi-mock {
+  flex: none;
+  width: 84px;
+}
+
+.dsw-yizi-studio-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dsw-yizi-studio-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
   color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-studio-color input[type="color"] {
+  box-sizing: border-box;
+  width: 34px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  cursor: pointer;
+}
+
+.dsw-yizi-studio-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dsw-yizi-studio-actions .dsw-yizi-doctor-run {
+  align-self: auto;
+}
+
+.dsw-yizi-studio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsw-yizi-studio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+}
+
+.dsw-yizi-studio-item .dsw-yizi-mock {
+  flex: none;
+  width: 72px;
+}
+
+.dsw-yizi-studio-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--dsw-yizi-fs-lg);
+  line-height: var(--dsw-yizi-lh-lg);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsw-yizi-studio-item-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.dsw-yizi-studio-action {
+  padding: 2px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-xs);
+  cursor: pointer;
+}
+
+.dsw-yizi-studio-action:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
 }
 `

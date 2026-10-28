@@ -67,9 +67,12 @@ export function createThemeBackend(runtime: ThemeRuntime, ctx: Context): ThemeBa
     const body = document.body
     if (body === null) return // not booted yet; the observer reasserts later
     // Remove only classes this plugin owns: a blanket `theme-*` sweep could
-    // delete an unrelated host/third-party class of the same shape.
+    // delete an unrelated host/third-party class of the same shape. Owned =
+    // the 19 shipped ids + every Theme Studio theme (`custom-` prefix).
     for (const cls of [...body.classList]) {
-      if (cls.startsWith('theme-') && OWNED_THEME_IDS.has(cls.slice('theme-'.length))) {
+      if (!cls.startsWith('theme-')) continue
+      const id = cls.slice('theme-'.length)
+      if (OWNED_THEME_IDS.has(id) || id.startsWith('custom-')) {
         body.classList.remove(cls)
       }
     }

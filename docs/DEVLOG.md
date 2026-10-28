@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-10-28 · v0.6.0：Theme Studio 自定义主题 + mock 卡片预览 + 排版跟字号
+
+### 字号轴：核心自己的设置行也是固定 px，插件跟"delta"而不是跟"设置值"
+
+用户反馈诊断文字偏大，怀疑插件没读字号设置。查实：核心 0.2.1 的字号轴写 `--dsh-content-font-size`（10–22px 默认 14）到 body 内联，`gradient-shadow-text.css` 派生 `--dsh-content-font-delta`（设置−14）推全 UI 阶梯；但 **ui-settings-general 自己的模块 CSS 也是写死 14/12/13px**——设置面板的 chrome 本来就不跟轴，跟轴的是会话内容/气泡/Markdown。插件行此前沿用固定 px，用户调小字号后自然显得偏大。修法取中：行内排版全部改 `calc(原px + var(--dsh-content-font-delta, 0px))`——默认 14 时 delta=0 逐像素等于旧值（零回归），调小时整行同步缩，0px 回退保老核心。教训：**"跟随设置"跟的是派生 delta，不是设置值本身**；带 fallback 的 calc 让新旧行为在默认点精确重合。
+
+### 自定义主题：别发明派生配方，反推内置主题的配色关系
+
+Theme Studio 的核心风险是"自动生成的配色难看"。做法是把 `academic` 亮/暗两块的 62 变量当成**关系式**而非数值表来反推：暗色品牌 = accent + 42% 白（#002fa7 → #5a7ce3 逐位一致，验证通过）；亮色层阶梯 = 底色向 accent 7%/13% 混入；边框 = accent 的 .10–.28 alpha 阶；滚动条 = 20%–42% 混入。全部用 JS 小型 mix 函数在生成时算成**字面色值**（不用 CSS color-mix 输出），与内置 sheet 同构产出 `body.theme-custom-*` 两块——brand-overrides 的别名级联自动补全其余令牌，这是"同构复用"而非"另起炉灶"。暗色语义色（error/success/warn）保持内置的固定红绿琥珀，不从主题色派生——语义色不该随品牌漂移。
+
+### 两个工程小点
+
+- `themes-store` 的 `all()` 必须返回**缓存快照**（set 时重建）——`useSyncExternalStore` 的 getSnapshot 若每次返回新数组会无限重渲染。
+- HeaderControls 里那份手抄的 19 主题列表是 0.4.x 时代的重复源，0.6.0 借 themesStore 一并消灭；`/theme` 命令的 options 是"每次打开现答"，自定义主题无需重注册命令。
+
+---
+
 ## 2026-10-28 · v0.5.5：`/theme` 斜杠命令 + 运行时自检（两个纯官方面的新功能）
 
 ### cordis 的 `ctx.inject(['service'], cb)` 是可选服务的安全挂载点

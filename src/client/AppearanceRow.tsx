@@ -14,6 +14,9 @@ import type { createAppearanceRowStore } from './settings-store.ts'
 import type { ThemeDefinition } from './themes-list.ts'
 import type { DoctorReport } from './doctor.tsx'
 import { DoctorSection } from './doctor.tsx'
+import type { CustomThemeDoc } from './custom-themes.ts'
+import { StudioSection } from './theme-studio.tsx'
+import { MockPreview } from './MockPreview.tsx'
 
 /** Injected business face: the theme/custom-brand writes. */
 export interface AppearanceRowInjected {
@@ -23,6 +26,12 @@ export interface AppearanceRowInjected {
   setCustomBrand: (patch: Partial<CustomBrandConfig>) => void
   /** Run the diagnostics self-check (present on every current build). */
   runDoctor?: () => DoctorReport
+  /** Read the saved Theme Studio documents. */
+  listCustomThemes?: () => CustomThemeDoc[]
+  /** Persist a custom-theme document (insert or update). */
+  saveCustomTheme?: (doc: CustomThemeDoc) => void
+  /** Delete a custom-theme document (reverts to default when it was active). */
+  removeCustomTheme?: (id: string) => void
 }
 
 /** Full component props: runtime share + store share + locale seat + injected face. */
@@ -69,7 +78,16 @@ function MarkupPreview({ markup, className }: { markup: string; className?: stri
  * @param props - composed slot props.
  * @returns the row element tree.
  */
-export function AppearanceRow({ t, setThemeId, setCustomBrand, runDoctor, useStore }: AppearanceRowComponentProps) {
+export function AppearanceRow({
+  t,
+  setThemeId,
+  setCustomBrand,
+  runDoctor,
+  listCustomThemes,
+  saveCustomTheme,
+  removeCustomTheme,
+  useStore,
+}: AppearanceRowComponentProps) {
   const themeId = useStore(s => s.theme)
   const themes = useStore(s => s.themes)
   const customBrand = useStore(s => s.customBrand)
@@ -104,17 +122,25 @@ export function AppearanceRow({ t, setThemeId, setCustomBrand, runDoctor, useSto
                   aria-pressed={themeId === entry.id}
                   onClick={() => { setThemeId(entry.id) }}
                 >
-                  <span
-                    className="dsw-yizi-swatch"
-                    style={{ background: `linear-gradient(135deg, ${swatch[0]} 0%, ${swatch[1]} 100%)` }}
-                    aria-hidden="true"
-                  />
+                  <MockPreview swatch={swatch} />
                   <span className="dsw-yizi-card-label">{label}</span>
                   {desc !== '' && <span className="dsw-yizi-card-desc">{desc}</span>}
                 </button>
               )
             })}
           </div>
+        </>
+      )}
+      {listCustomThemes !== undefined && saveCustomTheme !== undefined && removeCustomTheme !== undefined && (
+        <>
+          <div className="dsw-yizi-section-title">{t('appearance.studio')}</div>
+          <StudioSection
+            customs={listCustomThemes()}
+            t={(key) => t(key as ThemeKey)}
+            onApply={(id) => { setThemeId(id) }}
+            onSave={(doc) => { saveCustomTheme(doc) }}
+            onRemove={(id) => { removeCustomTheme(id) }}
+          />
         </>
       )}
       <div className="dsw-yizi-section-title">{t('appearance.custom')}</div>

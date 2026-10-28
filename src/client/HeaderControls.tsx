@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { resolveIcon } from './primitives-compat.ts'
 import { PaletteIcon } from './PaletteIcon.tsx'
+import { themesStore } from './themes-store.ts'
+import type { ThemeDefinition } from './themes-list.ts'
 
 /** Light/dark glyphs across Harness icon-set generations (`<Name>16` → `<Name>Regular`). */
 const DarkModeIcon = resolveIcon('IconDarkOutlineRegular', 'IconDarkOutlineMedium', 'IconDarkOutline16')
@@ -25,6 +27,15 @@ export interface HeaderControlsProps {
   subscribe: (listener: () => void) => () => void
 }
 
+/** Hook: the full theme registry (shipped + Theme Studio customs), cached snapshot. */
+function useThemes(): readonly ThemeDefinition[] {
+  return useSyncExternalStore(
+    themesStore.subscribe,
+    () => themesStore.all(),
+    () => themesStore.all(),
+  )
+}
+
 /** Hook: re-render the component whenever the theme snapshot changes. */
 function useThemeSnapshot(getTheme: HeaderControlsProps['getTheme'], subscribe: HeaderControlsProps['subscribe']) {
   return useSyncExternalStore(
@@ -33,28 +44,6 @@ function useThemeSnapshot(getTheme: HeaderControlsProps['getTheme'], subscribe: 
     () => getTheme(),
   )
 }
-
-const THEMES = [
-  { id: 'academic', name: '学术蓝', swatch: ['#f5f8ff', '#002fa7'] },
-  { id: 'aurora', name: '极光', swatch: ['#eef4fb', '#4a90d9'] },
-  { id: 'cyberpunk', name: '赛博朋克', swatch: ['#f0f4f8', '#0077b6'] },
-  { id: 'facebook', name: 'Facebook', swatch: ['#f0f2f5', '#1877f2'] },
-  { id: 'liquidglass', name: '液态玻璃', swatch: ['#f4f8ff', '#2563eb'] },
-  { id: 'lychee', name: '荔枝红', swatch: ['#fff5f5', '#e63946'] },
-  { id: 'magazine', name: '杂志感', swatch: ['#fdf6ec', '#8b4513'] },
-  { id: 'matrix', name: '黑客帝国', swatch: ['#f5faf5', '#008a2e'] },
-  { id: 'minimal', name: '极简风', swatch: ['#ffffff', '#0066cc'] },
-  { id: 'mint', name: '薄荷冰沙', swatch: ['#f5fbf8', '#10b981'] },
-  { id: 'morandi', name: '莫兰迪', swatch: ['#f7f3ef', '#b8927a'] },
-  { id: 'nature', name: '自然风', swatch: ['#f5f2eb', '#4a7c59'] },
-  { id: 'palace', name: '故宫朱砂', swatch: ['#faf6f0', '#b5372a'] },
-  { id: 'sunset', name: '落日熔金', swatch: ['#fef8f0', '#b45309'] },
-  { id: 'tech', name: '科技感', swatch: ['#f0f4f8', '#2b6cb0'] },
-  { id: 'typewriter', name: '复古打字机', swatch: ['#f5f0e8', '#8b6914'] },
-  { id: 'vaporwave', name: '蒸汽波', swatch: ['#f8f0f6', '#ff6ec7'] },
-  { id: 'vibrant', name: '活力橙', swatch: ['#fff8f0', '#f3641e'] },
-  { id: 'violet', name: '紫罗兰', swatch: ['#faf5fe', '#7209b7'] },
-]
 
 /** Native-style icon button (no CSS modules). */
 function IconButton({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
@@ -94,8 +83,9 @@ function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const snapshot = useThemeSnapshot(getTheme, subscribe)
+  const themes = useThemes()
   const currentTheme = snapshot.theme
-  const current = THEMES.find(t => t.id === currentTheme)
+  const current = themes.find(t => t.id === currentTheme)
 
   useEffect(() => {
     if (!open) return
@@ -126,7 +116,7 @@ function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
           zIndex: 1000,
         }}>
-          {THEMES.map((t) => (
+          {themes.map((t) => (
             <button
               key={t.id}
               type="button"

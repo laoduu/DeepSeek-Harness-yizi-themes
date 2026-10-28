@@ -63,6 +63,20 @@ export const zh = {
   'doctor.coverage.covered': '个插件覆盖',
   'doctor.coverage.undefined': '个全仓未定义',
   'doctor.gap.hint': '以下令牌被核心引用但全仓无定义（渲染为回退色）；它们是潜在的补全覆盖点，是否覆盖取决于视觉判断。',
+  // Theme Studio (custom themes)
+  'appearance.studio': '自定义主题',
+  'studio.name.placeholder': '主题名称（如「墨韵」）',
+  'studio.accent': '主题色',
+  'studio.lightBg': '亮色底',
+  'studio.darkBg': '暗色底',
+  'studio.add': '添加主题',
+  'studio.update': '保存修改',
+  'studio.cancel': '取消编辑',
+  'studio.apply': '应用',
+  'studio.edit': '编辑',
+  'studio.delete': '删除',
+  'studio.defaultName': '自定义主题',
+  'studio.hint': '从主题色自动派生完整的亮/暗两套配色（底色可手动覆盖）；保存后出现在主题网格、右上角选择器和 /theme 命令里。',
 } satisfies Record<string, string>
 
 /** The settings.theme namespace key union. */
@@ -129,4 +143,17 @@ export const en = {
   'doctor.coverage.covered': 'covered',
   'doctor.coverage.undefined': 'undefined',
   'doctor.gap.hint': 'These tokens are referenced by the core but defined nowhere (rendered at their fallback); they are the next coverage candidates — whether to cover them is a visual call.',
+  'appearance.studio': 'Custom themes',
+  'studio.name.placeholder': 'Theme name (e.g. "Ink")',
+  'studio.accent': 'Accent',
+  'studio.lightBg': 'Light base',
+  'studio.darkBg': 'Dark base',
+  'studio.add': 'Add theme',
+  'studio.update': 'Save changes',
+  'studio.cancel': 'Cancel editing',
+  'studio.apply': 'Apply',
+  'studio.edit': 'Edit',
+  'studio.delete': 'Delete',
+  'studio.defaultName': 'Custom theme',
+  'studio.hint': 'The full light/dark palettes are derived from the accent (bases can be overridden); saved themes appear in the grid, the top-right pickers, and the /theme command.',
 } satisfies Record<ThemeKey, string>

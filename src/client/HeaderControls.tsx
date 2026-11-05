@@ -25,9 +25,13 @@ export interface HeaderControlsProps {
   setThemeId: (id: string) => void
   /** Subscribe to theme changes; returns an unsubscribe function. */
   subscribe: (listener: () => void) => () => void
+  /** Bound translate for the plugin's settings namespace (theme names/descs). */
+  translate: (key: string) => string
 }
 
-/** Hook: the full theme registry (shipped + Theme Studio customs), cached snapshot. */
+/** Hook: the full theme registry (shipped + Theme Studio customs), cached snapshot.
+ * The store resolves display text through its bound translator, so a language
+ * switch reaches this component through the store's own notification. */
 function useThemes(): readonly ThemeDefinition[] {
   return useSyncExternalStore(
     themesStore.subscribe,
@@ -79,7 +83,7 @@ function MarkupPreview({ markup, className }: { markup: string; className?: stri
 }
 
 /** Theme picker button with dropdown. */
-function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
+function ThemePicker({ getTheme, setThemeId, subscribe, translate }: HeaderControlsProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const snapshot = useThemeSnapshot(getTheme, subscribe)
@@ -98,7 +102,7 @@ function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
-      <IconButton onClick={() => { setOpen(o => !o) }} title={`主题: ${current?.name ?? '默认'}`}>
+      <IconButton onClick={() => { setOpen(o => !o) }} title={`${translate('command.label')}: ${current?.name ?? translate('appearance.default')}`}>
         <PaletteIcon size={14} />
         <span style={{
           display: 'inline-block', width: 14, height: 14, borderRadius: 4,
@@ -145,7 +149,7 @@ function ThemePicker({ getTheme, setThemeId, subscribe }: HeaderControlsProps) {
 }
 
 /** Light/dark mode toggle button. */
-function ModeToggle({ getTheme, setPreference, subscribe }: HeaderControlsProps) {
+function ModeToggle({ getTheme, setPreference, subscribe, translate }: HeaderControlsProps) {
   const snapshot = useThemeSnapshot(getTheme, subscribe)
   const preference = snapshot.preference
   const isDark = preference === 'dark' || (preference === 'system' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches)
@@ -153,12 +157,12 @@ function ModeToggle({ getTheme, setPreference, subscribe }: HeaderControlsProps)
   return (
     <IconButton
       onClick={() => { setPreference(isDark ? 'light' : 'dark') }}
-      title={isDark ? '切换到浅色模式' : '切换到深色模式'}
+      title={translate(isDark ? 'mode.switch.toLight' : 'mode.switch.toDark')}
     >
       {isDark
         ? (DarkModeIcon !== undefined ? <DarkModeIcon size={14} /> : null)
         : (LightModeIcon !== undefined ? <LightModeIcon size={14} /> : null)}
-      <span>{isDark ? '深色' : '浅色'}</span>
+      <span>{translate(isDark ? 'mode.dark' : 'mode.light')}</span>
     </IconButton>
   )
 }

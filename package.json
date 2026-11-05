@@ -1,6 +1,6 @@
 {
   "name": "dsh-yizi-themes",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "YiziMarkdown theme pack for DeepSeek Harness — 19 style themes, Theme Studio custom themes, custom brand, WCAG contrast checks and config transfer.",
   "type": "module",
   "main": "dist/index.js",

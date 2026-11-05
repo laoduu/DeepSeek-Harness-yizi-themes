@@ -18,7 +18,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
-import { THEMES } from './themes-list.ts'
+import { SHIPPED_THEME_IDS } from './themes-list.ts'
 
 /** The theme face consumed by the plugin's pickers and settings row. */
 export interface ThemeFace {
@@ -47,7 +47,7 @@ export interface ThemeBackend {
 export const THEME_STORAGE_KEY = 'dsh-yizi-themes:themeId'
 
 /** Style-theme ids this plugin owns (`body.theme-<id>`); only these are cleaned. */
-const OWNED_THEME_IDS: ReadonlySet<string> = new Set(THEMES.map((theme) => theme.id))
+const OWNED_THEME_IDS: ReadonlySet<string> = SHIPPED_THEME_IDS
 
 /** Build the backend for one plugin fiber. */
 export function createThemeBackend(runtime: ThemeRuntime, ctx: Context): ThemeBackend {

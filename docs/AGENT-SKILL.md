@@ -50,13 +50,13 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **默认方式：直接下载发布包 tgz（无需源码、无需构建）**
 
-当前版本 **v0.5.7** 的准确下载地址：
+当前版本 **v0.5.8** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
+curl -L -o dsh-yizi-themes-0.5.8.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.8/dsh-yizi-themes-0.5.8.tgz
 ```
 
-> ⚠️ **别凭记忆写版本号**：给用户的下载地址必须是 `v0.5.7`（本文件与 Release 同步）。如果用户要求更新版本，先去 Releases 页面确认最新 tag，再按第 60 行的固定 URL 格式拼出地址。
+> ⚠️ **别凭记忆写版本号**：给用户的下载地址必须是 `v0.5.8`（本文件与 Release 同步）。如果用户要求更新版本，先去 Releases 页面确认最新 tag，再按第 60 行的固定 URL 格式拼出地址。
 
 > **版本匹配**：0.5.x 面向 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` 桌面版）。若用户的 Harness 更老（客户端运行时仍为 `@deepseek-ai/dsh-client-runtime`，例如 rc.5 / rc.8），请改用 **0.3.x**。若用户报 `dsh-client-runtime missed the module table`，说明 Harness 是新版而插件是旧版，装最新版（≥ 0.4.0）即可。
 新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 获取，URL 格式固定为：
@@ -113,15 +113,17 @@ dsh plugin --profile <desktop|web> add  /path/to/dsh-yizi-themes-<version>.tgz
 | 右上角主题按钮 | 出现**调色板图标**按钮 + 明暗切换按钮（会话头部右侧） |
 | 新会话（无对话） | 右上角出现**浮动**的主题/明暗按钮（容器 `#dsw-yizi-floating-controls`） |
 | 侧边栏品牌 | 出现插件的品牌槽位产物（`[data-yizi-logo]` / `[data-yizi-brand-name]`，默认 `DEEPSEEK`+`HARNESS`） |
-| 设置 → 外观 | 出现"自定义"板块（Logo SVG / 品牌字样 / 徽章字样 / 新会话标题 / 品牌映射），以及主题卡片网格 |
-| 主题工作室（0.5.6+） | 设置 → 外观 → 自定义主题：填名称 + 选主题色 + 卡片实时预览，点"添加主题"后**立刻**出现在上方主题网格；已存主题带「应用 / 编辑 / 删除」，删除同样即时生效 |
+| 设置 → 主题外观 | 出现"自定义"板块（Logo SVG / 品牌字样 / 徽章字样 / 新会话标题 / 品牌映射），以及主题卡片网格 |
+| 独立设置页（0.5.8+） | 设置弹窗左侧导航里出现**与「通用」平级**的「主题外观」条目（英文界面为 Appearance），带调色盘图标；点开是插件自己的整页，不再是通用设置里的一个条目 |
+| 多语言（0.5.8+） | 切到 日本語 / Español / Français / Deutsch / Русский / Português(BR) 任一语言，**主题卡片上的主题名和介绍也跟着变**（此前只有界面文案变、主题卡片仍是中文） |
+| 主题工作室（0.5.6+） | 设置 → **主题外观** → 自定义主题：填名称 + 选主题色 + 卡片实时预览，点"添加主题"后**立刻**出现在上方主题网格；已存主题带「应用 / 编辑 / 删除」，删除同样即时生效 |
 | `/theme` 命令（0.5.6+） | 会话输入框敲 `/theme` 出现主题选择弹层；`/theme list` 列出全部主题；`/theme doctor` 输出安装自检（命中模块、插槽、令牌覆盖率） |
-| 对比度检查（0.5.7+） | 设置 → 外观 → 自定义主题，编辑区下方出现四行 WCAG 对比度（品牌/文字 × 亮/暗底），带 AAA / AA / 仅大字号 / 不达标；已存主题带最差项徽标 |
-| 配置备份（0.5.7+） | 设置 → 外观 → **配置备份**：点「导出 JSON」应下载 `dsh-yizi-themes-<日期>.json`；点「导入 JSON」选同一文件应提示"已导入 N 个自定义主题"，且主题列表不出现重复项 |
+| 对比度检查（0.5.7+） | 设置 → **主题外观** → 自定义主题，编辑区下方出现四行 WCAG 对比度（品牌/文字 × 亮/暗底），带 AAA / AA / 仅大字号 / 不达标；已存主题带最差项徽标 |
+| 配置备份（0.5.7+） | 设置 → **主题外观** → **配置备份**：点「导出 JSON」应下载 `dsh-yizi-themes-<日期>.json`；点「导入 JSON」选同一文件应提示"已导入 N 个自定义主题"，且主题列表不出现重复项 |
 | `/theme` 操作行（0.5.7+） | `/theme` 弹层底部出现「随机换一个主题 / 导入配置 / 导出配置」三行 |
 | 持久化 | 浏览器 `localStorage`：`dsh-yizi-themes:brand`（自定义品牌）、`dsh-yizi-themes:themeId`（风格主题）、`dsh-yizi-themes:customThemes`（主题工作室的自定义主题） |
 | 切换主题 | `body.theme-<id>` 生效，左上角品牌色随主题/明暗变化 |
-| 品牌尺寸 | 设置 → 外观 → 自定义 → **品牌尺寸**滑块（0.5.4+，75%–200%）；拖动即时缩放左上角 Logo/字样/徽章且不被侧边栏裁切（数据在 localStorage `dsh-yizi-themes:brand` 的 `scale` 字段） |
+| 品牌尺寸 | 设置 → 主题外观 → 自定义 → **品牌尺寸**滑块（0.5.4+，75%–200%）；拖动即时缩放左上角 Logo/字样/徽章且不被侧边栏裁切（数据在 localStorage `dsh-yizi-themes:brand` 的 `scale` 字段） |
 | 控制台 | **零报错**（尤其不应有 `client-modules: require(...) missed the module table` 或 React error #130） |
 
 确认装到目标 profile 的**新代码**（注意检查目标 profile，不是别的 profile）：

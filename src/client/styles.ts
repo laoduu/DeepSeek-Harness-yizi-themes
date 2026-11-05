@@ -20,8 +20,10 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  /* The plugin owns a whole settings SECTION now, not a list item inside
+     General: no separating border, and the column fills the section pane. */
+  padding: 0 0 16px;
+  min-width: 0;
 }
 
 .dsw-yizi-title,
@@ -32,8 +34,16 @@ export default `/* dsh-yizi-themes appearance-row styles (plain CSS, injected at
   color: var(--dsw-alias-label-primary);
 }
 
+/* The section heading is the page title now; sub-sections keep the quieter
+   treatment so the two levels stay distinguishable on one screen. */
+.dsw-yizi-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
 .dsw-yizi-section-title {
-  margin-top: 8px;
+  margin-top: 12px;
+  color: var(--dsw-alias-label-secondary);
 }
 
 .dsw-yizi-selected {

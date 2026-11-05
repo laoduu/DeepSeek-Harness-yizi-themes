@@ -18,7 +18,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 ## ✨ Highlights
 
 - 🎭 **19 themes**: from flowing auroras to cyberpunk neon, from Morandi greys to Forbidden-City vermilion
-- 🌈 **Theme Studio · custom themes** (0.5.6): pick one accent colour and complete light/dark palettes are **derived automatically** — five voices (brand, ink, background tint strength, border voice, type scale) each follow the grammar the presets were tuned by — previewed live on a card and available immediately in the theme grid, the pickers and `/theme` (Settings → Appearance → Custom theme)
+- 🌈 **Theme Studio · custom themes** (0.5.6): pick one accent colour and complete light/dark palettes are **derived automatically** — five voices (brand, ink, background tint strength, border voice, type scale) each follow the grammar the presets were tuned by — previewed live on a card and available immediately in the theme grid, the pickers and `/theme` (Settings → **Appearance** → Custom theme)
 - 🎚️ **Advanced palette** (0.5.6): take the wheel when you want to — override the ink, background tint strength, border voice (brand / neutral ink) and either base colour; leave any field empty to stay automatic
 - 🌗 **Dual mode**: every theme has hand-tuned light/dark token pairs, auto-switching with your system
 - 🧩 **Standard plugin**: a Cordis plugin installed via `dsh plugin` — zero changes to the Harness source tree
@@ -27,7 +27,7 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 🧱 **Current-generation support (0.5.2)**: targets the `dsh-client-store` / `configForms` generation (Harness ≥ `v0.1.2-alpha.1`, including the `0.2.0-rc.2` / `0.2.1-rc.2` / `0.2.1-rc.3` desktop apps); custom branding persists in browser-local storage (`localStorage`) and needs no Harness settings transport
 - 🎚️ **Orthogonal dimensions**: color mode (light/dark/system) and style theme are fully independent
 - 🖌️ **Custom branding**: top-left logo / wordmark / badge / new-session headline, all following the **theme color and light/dark mode automatically**
-- 📐 **Adjustable brand size** (0.5.4): one overall scale (75%–200%) for the top-left logo, wordmark and badge (Settings → Appearance → Custom → Brand size), applied live — no restart needed
+- 📐 **Adjustable brand size** (0.5.4): one overall scale (75%–200%) for the top-left logo, wordmark and badge (Settings → **Appearance** → Custom → Brand size), applied live — no restart needed
 - 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
 - ⌨️ **`/theme` command and Doctor** (0.5.6): type `/theme` to switch themes or list them, and `/theme doctor` for a live installation self-check (module hits, slots, token coverage)
 - 🎯 **Live contrast checking** (0.5.7): the Theme Studio computes WCAG 2.1 ratios for brand/text on both bases while you edit and rates them AAA / AA / large-only / fail; saved themes carry a badge for their weakest pair — taste stays yours, readability gets a number
@@ -35,6 +35,8 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 📱 **Narrow-screen and touch support** (0.5.7): the theme grid, studio editor, saved list and mapping table reflow on phone widths, and touch devices get larger hit targets
 - 🎲 **`/theme` action rows** (0.5.7): the popup gains "pick a random theme", "import settings" and "export settings"
 - 🧪 **Release gate** (0.5.7): typecheck (`tsc --noEmit`, aimed at fatal errors such as undeclared identifiers), 22 pure-logic self-checks, and a double-apply boot regression against the real built bundle — all on CI
+- 🗂️ **Own settings page "Appearance"** (0.5.8): no longer an item buried inside General — a first-class page in the settings navigation, sitting beside General, with its own palette icon
+- 🌍 **Eight UI languages** (0.5.8): 中文 / English / 日本語 / Español / Français / Deutsch / Русский / Português (BR), and the **19 theme names and descriptions are localized too** (they used to be hard-coded Chinese, so only the theme cards stayed Chinese when you switched language)
 - 📍 **Controls everywhere**: theme picker + mode toggle in the session header, and floating controls on blank new sessions
 
 ---
@@ -74,10 +76,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.5.7.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.5.8.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
+curl -L -o dsh-yizi-themes-0.5.8.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.8/dsh-yizi-themes-0.5.8.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -85,7 +87,7 @@ curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.7.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.8.tgz
 ```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
@@ -125,14 +127,14 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 ### Usage
 
 - **Switch theme / mode**: the palette button + light/dark toggle at the top right of the session header; on a blank new session they appear as floating controls in the same spot. Typing `/theme` works too.
-- **Make your own theme**: Settings → Appearance → **Custom theme** — name it, pick an accent, preview it live, then press "Add theme". Saved themes have Apply / Edit / Delete, all applied instantly with no restart (see below).
-- **Custom branding**: Settings → Appearance → Custom (below).
+- **Make your own theme**: Settings → **Appearance** → **Custom theme** — name it, pick an accent, preview it live, then press "Add theme". Saved themes have Apply / Edit / Delete, all applied instantly with no restart (see below).
+- **Custom branding**: Settings → **Appearance** → Custom (below).
 
 ---
 
 ## 🌈 Theme Studio (custom themes)
 
-Settings → Appearance → **Custom theme**:
+Settings → **Appearance** → **Custom theme**:
 
 | Step | What it does |
 |---|---|
@@ -158,7 +160,7 @@ Leave any field empty to stay automatic. Saved themes can be edited again, and d
 
 ## 💾 Backup and Migration (0.5.7)
 
-Settings → Appearance → **Settings backup**: export "custom themes + brand settings" as one JSON file, or import it back.
+Settings → **Appearance** → **Settings backup**: export "custom themes + brand settings" as one JSON file, or import it back.
 
 | Situation | How |
 |---|---|
@@ -175,7 +177,7 @@ You can also type `/theme` and use the action rows at the bottom of the popup: r
 
 ## 🖌️ Custom Branding
 
-Settings → Appearance → **Custom**:
+Settings → **Appearance** → **Custom**:
 
 | Field | Description |
 |---|---|

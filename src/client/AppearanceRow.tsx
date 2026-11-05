@@ -1,9 +1,16 @@
 /**
- * Appearance preference row registered into the General section item slot:
- * a style-theme swatch grid + a custom-brand configuration block. The light /
- * dark / system mode cubes are intentionally NOT duplicated here — the core
- * Appearance row (or the top-right mode toggle) already provides them, so
- * this row starts straight at the theme grid.
+ * The plugin's own settings SECTION ("主题外观" / Appearance, registered into
+ * `settings.section`): a style-theme swatch grid, the Theme Studio, the
+ * settings transfer block, and the custom-brand configuration.
+ *
+ * It used to be an item inside the General section. Promoting it to its own
+ * section is what makes the navigation icon (and the tab-like navigation
+ * entry) possible: `settings.section.icon` keys off the section id, and an
+ * item inside General has no row of its own to carry one.
+ *
+ * The light / dark / system mode cubes are intentionally NOT duplicated here:
+ * the core Appearance controls and the top-right mode toggle already provide
+ * them, so this section starts straight at the theme grid.
  */
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import { BRAND_SCALE_MAX, BRAND_SCALE_MIN, DEFAULT_THEME, clampBrandScale } from './theme-settings.ts'
@@ -41,7 +48,7 @@ export interface AppearanceRowInjected {
 
 /** Full component props: runtime share + store share + locale seat + injected face. */
 export type AppearanceRowComponentProps =
-  PropsRuntime<'settings.general.item'> & PropsStore<ReturnType<typeof createAppearanceRowStore>>
+  PropsRuntime<'settings.section'> & PropsStore<ReturnType<typeof createAppearanceRowStore>>
   & PropsLocale<'yizi.theme'> & AppearanceRowInjected
 
 /** Swatch gradient fallback when a theme declares none. */

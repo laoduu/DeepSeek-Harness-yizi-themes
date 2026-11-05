@@ -31,7 +31,7 @@
 - 🧱 **本代适配（0.5.2）**：适配 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` / `0.2.1-rc.3` 桌面版）；自定义品牌持久化在浏览器本地（`localStorage`），不依赖 Harness 的设置传输层
 - 🎚️ **正交双维度**：明暗模式与风格主题完全独立，可自由组合
 - 🖌️ **自定义品牌**：左上角 Logo / 品牌字样 / 徽章 / 新会话标题全部可自定义，**颜色自动跟随主题与明暗**
-- 📐 **品牌尺寸可调**（0.5.4）：左上角 Logo、品牌字样、徽章按同一倍率**整体缩放**（75%–200%，设置 → 外观 → 自定义 → 品牌尺寸），拖动即时生效、无需重启
+- 📐 **品牌尺寸可调**（0.5.4）：左上角 Logo、品牌字样、徽章按同一倍率**整体缩放**（75%–200%，设置 → **主题外观** → 自定义 → 品牌尺寸），拖动即时生效、无需重启
 - 🔤 **品牌映射**（实验性，默认关闭）：把界面/输出中出现的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词（开启后也绝不改写你正在输入的内容）
 - ⌨️ **`/theme` 命令与 Doctor**（0.5.6）：输入框敲 `/theme` 直接切主题、列主题；`/theme doctor` 输出安装自检（模块命中、槽位、令牌覆盖率）
 - 🎯 **对比度实时检查**（0.5.7）：主题工作室在编辑时按 WCAG 2.1 实时计算「品牌/文字 × 亮/暗底」四组对比度并给出 AAA / AA / 仅大字号 / 不达标，已存主题列表也带最差分项徽标——自建主题好不好看凭直觉，能不能读有数字
@@ -39,6 +39,8 @@
 - 📱 **窄屏与触屏适配**（0.5.7）：主题网格、工作室编辑器、已存列表、映射表在手机宽度下自动换行 / 降列，触屏设备增大点击目标
 - 🎲 **`/theme` 操作行**（0.5.7）：弹出菜单里新增「随机换一个主题 / 导入配置 / 导出配置」
 - 🧪 **发布门禁**（0.5.7）：类型检查（`tsc --noEmit`，专抓未声明标识符这类致命错误）+ 22 项纯逻辑自检 + 真实 bundle 的双次 apply 崩溃回归，全部跑在 CI 上
+- 🗂️ **独立设置页「主题外观」**（0.5.8）：不再是「通用」里的一个条目——设置弹窗左侧导航里与通用设置平级的独立页面，带专属调色盘导航图标
+- 🌍 **8 种界面语言**（0.5.8）：中文 / English / 日本語 / Español / Français / Deutsch / Русский / Português (BR)，**19 个主题的名称与介绍也一并本地化**（此前它们硬编码为中文，切语言时只有主题卡片不变）
 - 📍 **随处可切换**：会话头部右上角 + 新会话（无对话）时的浮动按钮
 
 ---
@@ -78,10 +80,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.5.7.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.5.8.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
+curl -L -o dsh-yizi-themes-0.5.8.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.8/dsh-yizi-themes-0.5.8.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -89,7 +91,7 @@ curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.7.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.8.tgz
 ```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
@@ -130,14 +132,14 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 ### 使用
 
 - **切换主题 / 明暗**：右上角调色板按钮 + 明暗切换按钮（会话头部）；新会话（无对话内容）时以浮动按钮显示在同一位置；也可以直接敲 `/theme`；
-- **自己做主题**：设置 → 外观 → **自定义主题**——填名称、选主题色，卡片实时预览，点「添加主题」保存；已存主题带「应用 / 编辑 / 删除」，全部即时生效，无需重启（详见下节）；
-- **自定义品牌**：设置 → 外观 → 自定义（见下节）。
+- **自己做主题**：设置 → **主题外观** → **自定义主题**——填名称、选主题色，卡片实时预览，点「添加主题」保存；已存主题带「应用 / 编辑 / 删除」，全部即时生效，无需重启（详见下节）；
+- **自定义品牌**：设置 → **主题外观** → 自定义（见下节）。
 
 ---
 
 ## 🌈 主题工作室（自定义主题）
 
-设置 → 外观 → **自定义主题**：
+设置 → **主题外观** → **自定义主题**：
 
 | 步骤 | 说明 |
 |---|---|
@@ -163,7 +165,7 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 
 ## 💾 配置备份与迁移（0.5.7）
 
-设置 → 外观 → **配置备份**：把「自定义主题 + 品牌设置」整体导出为 JSON，或从 JSON 导入。
+设置 → **主题外观** → **配置备份**：把「自定义主题 + 品牌设置」整体导出为 JSON，或从 JSON 导入。
 
 | 场景 | 用法 |
 |---|---|
@@ -180,7 +182,7 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 
 ## 🖌️ 自定义品牌
 
-设置 → 外观 → **自定义** 板块：
+设置 → **主题外观** → **自定义** 板块：
 
 | 设置项 | 说明 |
 |---|---|

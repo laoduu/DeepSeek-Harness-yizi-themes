@@ -36,6 +36,8 @@ export * from ${JSON.stringify(join(root, 'src/client/custom-themes.ts'))}
 export * from ${JSON.stringify(join(root, 'src/client/contrast.ts'))}
 export * from ${JSON.stringify(join(root, 'src/client/transfer.ts'))}
 export * from ${JSON.stringify(join(root, 'src/client/themes-list.ts'))}
+export { zh, en, ja, es, fr, de, ru, pt } from ${JSON.stringify(join(root, 'src/client/locales.ts'))}
+export { createThemesStore as createThemesStoreForTest, setStoreTranslate } from ${JSON.stringify(join(root, 'src/client/themes-store.ts'))}
 `, 'utf8')
 
 await esbuild.build({
@@ -59,6 +61,12 @@ globalThis.localStorage = {
 }
 
 const mod = require(outfile)
+
+/** All eight dictionaries, keyed by language. */
+mod.DICTIONARIES = {
+  zh: mod.zh, en: mod.en, ja: mod.ja, es: mod.es,
+  fr: mod.fr, de: mod.de, ru: mod.ru, pt: mod.pt,
+}
 
 let passed = 0
 const failures = []
@@ -254,13 +262,62 @@ check('normalizeHex ignores invalid input and keeps valid colors', () => {
 
 // ── Shipped theme list integrity ───────────────────────────────────────
 check('the shipped theme list keeps 19 unique ids with swatches', () => {
-  assertEqual(mod.THEMES.length, 19, 'theme count')
-  const ids = new Set(mod.THEMES.map((theme) => theme.id))
+  assertEqual(mod.SHIPPED_THEMES.length, 19, 'theme count')
+  const ids = new Set(mod.SHIPPED_THEMES.map((theme) => theme.id))
   assertEqual(ids.size, 19, 'ids are unique')
-  for (const theme of mod.THEMES) {
+  for (const theme of mod.SHIPPED_THEMES) {
     assert(/^#[0-9a-fA-F]{6}$/.test(theme.swatch[0]), `bad swatch for ${theme.id}`)
-    assert(theme.name.length > 0, `missing name for ${theme.id}`)
+    assert(theme.nameKey === `theme.${theme.id}.name`, `bad nameKey for ${theme.id}`)
+    assert(theme.descKey === `theme.${theme.id}.desc`, `bad descKey for ${theme.id}`)
   }
+})
+
+// ── Theme text localization ───────────────────────────────────────────
+// Regression for the reported bug: switching the UI language must change the
+// theme names/descriptions everywhere, not only after some other action.
+check('every shipped theme has a name and description in every dictionary', () => {
+  for (const [lang, dict] of Object.entries(mod.DICTIONARIES)) {
+    for (const theme of mod.SHIPPED_THEMES) {
+      assert(typeof dict[theme.nameKey] === 'string' && dict[theme.nameKey] !== '',
+        `${lang}: missing ${theme.nameKey}`)
+      assert(typeof dict[theme.descKey] === 'string' && dict[theme.descKey] !== '',
+        `${lang}: missing ${theme.descKey}`)
+    }
+  }
+})
+
+check('the dictionaries answer the same theme text in different languages', () => {
+  const zhAcademic = mod.DICTIONARIES.zh['theme.academic.name']
+  const jaAcademic = mod.DICTIONARIES.ja['theme.academic.name']
+  const ruAcademic = mod.DICTIONARIES.ru['theme.academic.name']
+  assert(zhAcademic !== jaAcademic, 'ja name should differ from zh')
+  assert(zhAcademic !== ruAcademic, 'ru name should differ from zh')
+  assert(/[\u3040-\u30ff]/.test(jaAcademic), `ja name is not Japanese: ${jaAcademic}`)
+  assert(/[\u0400-\u04ff]/.test(ruAcademic), `ru name is not Cyrillic: ${ruAcademic}`)
+})
+
+check('themesStore resolves names through the translate function it is given', () => {
+  const store = mod.createThemesStoreForTest([])
+  const translateEn = (key) => mod.DICTIONARIES.en[key] ?? key
+  const translateJa = (key) => mod.DICTIONARIES.ja[key] ?? key
+  const en = store.all(translateEn)
+  const ja = store.all(translateJa)
+  const enAcademic = en.find((theme) => theme.id === 'academic')
+  const jaAcademic = ja.find((theme) => theme.id === 'academic')
+  assertEqual(enAcademic.name, mod.DICTIONARIES.en['theme.academic.name'], 'en name')
+  assertEqual(jaAcademic.name, mod.DICTIONARIES.ja['theme.academic.name'], 'ja name')
+  assert(enAcademic.name !== jaAcademic.name, 'the two languages must differ')
+})
+
+check('themesStore reports a language change so pickers re-render', () => {
+  const store = mod.createThemesStoreForTest([])
+  let notifications = 0
+  const off = store.subscribe(() => { notifications += 1 })
+  const before = store.all((key) => mod.DICTIONARIES.en[key] ?? key)
+  assert(before.length === 19, `expected 19 themes, got ${before.length}`)
+  store.notifyLanguageChange()
+  off()
+  assert(notifications >= 1, 'a language change must notify subscribers')
 })
 
 rmSync(tempDir, { recursive: true, force: true })

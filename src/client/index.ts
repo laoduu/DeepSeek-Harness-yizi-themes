@@ -14,7 +14,7 @@ import { createAppearanceRowStore } from './settings-store.ts'
 import type { CustomBrandConfig, ThemePreference } from './theme-settings.ts'
 import { DEFAULT_CUSTOM_BRAND } from './theme-settings.ts'
 import { loadBrand, saveBrand } from './brand-persistence.ts'
-import { zh, en, type ThemeKey } from './locales.ts'
+import { zh, en, ja, es, fr, de, ru, pt, type ThemeKey } from './locales.ts'
 import * as themeCss from './themes.ts'
 import rowStyles from './styles.ts'
 import brandOverrideCss from './brand-overrides.ts'
@@ -29,7 +29,9 @@ import { brandStore } from './brand-store.ts'
 import { registerThemeCommand } from './theme-commands.ts'
 import { runDoctorChecks } from './doctor.tsx'
 import type { DoctorReport } from './doctor.tsx'
+import { ThemeSectionIcon } from './ThemeSectionIcon.tsx'
 import { themesStore } from './themes-store.ts'
+import { setStoreTranslate } from './themes-store.ts'
 import { customThemesCss } from './custom-themes.ts'
 import type { CustomThemeDoc } from './custom-themes.ts'
 import { buildTransferPayload, parseTransfer, serializeTransfer, mergeThemes } from './transfer.ts'
@@ -49,6 +51,13 @@ export const inject = ['slots', 'locale', 'theme']
 
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'yizi.theme'
+
+/**
+ * Stable id of the plugin's settings section. The `settings.section` row and
+ * its `settings.section.icon` contribution MUST share it — an unmatched icon
+ * id never renders.
+ */
+export const SECTION_ID = 'yizi-themes'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -303,6 +312,10 @@ function applyStages(
   // core without the commandUi service the inner fiber stays PENDING and the
   // plugin activates without the command — no crash path.
   const t = ctx.locale.bind(SETTINGS_NS)
+  // Give the theme store a default translator so its own subscribers (the
+  // header picker) resolve labels in the current language without every call
+  // site having to pass `t`.
+  setStoreTranslate((key) => t(key as ThemeKey))
   /**
    * Action rows of the /theme popup. Declared before the registration so the
    * contribution can close over them; populated at the end of apply, once the
@@ -318,7 +331,7 @@ function applyStages(
   guarded('theme command', () => {
     registerThemeCommand(ctx, {
       backend: themeBackend,
-      themes: () => themesStore.all(),
+      themes: () => themesStore.all(t),
       preference: () => {
         try { return runtime.getTheme().preference ?? 'system' } catch { return 'system' }
       },
@@ -360,6 +373,8 @@ function applyStages(
     setPreference: (id: 'light' | 'dark' | 'system') => { runtime.setTheme(id) },
     setThemeId: (id: string) => { themeBackend.setThemeId(id) },
     subscribe: (listener: () => void) => themeBackend.subscribe(listener),
+    // Theme names/descriptions and the button copy follow the UI language.
+    translate: (key) => t(key as ThemeKey),
   })
   guarded('header controls', () => {
     ctx.slots.inject(
@@ -401,7 +416,7 @@ function applyStages(
   guarded('core theme registration', () => {
     if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
       const existing = new Set(runtime.getTheme().themes.map(t => t.id))
-      for (const theme of themesStore.all()) {
+      for (const theme of themesStore.all(t)) {
         if (existing.has(theme.id)) continue
         runtime.register({
           id: theme.id,
@@ -477,7 +492,7 @@ function applyStages(
 
   /** Pick a random theme, never the one already active. */
   const pickRandomTheme = (): void => {
-    const all = themesStore.all()
+    const all = themesStore.all(t)
     if (all.length === 0) return
     const current = themeBackend.readThemeId()
     const candidates = all.filter((theme) => theme.id !== current)
@@ -549,7 +564,7 @@ function applyStages(
     // Theme id comes from the style-theme backend (core field or localStorage),
     // so the grid highlight matches reality on every Harness build; the theme
     // list includes the Theme Studio customs so the grid shows them too.
-    bound?.sync(core.preference, themeBackend.readThemeId(), themesStore.all(), settings, ++syncSeq)
+    bound?.sync(core.preference, themeBackend.readThemeId(), themesStore.all(t), settings, ++syncSeq)
   }
   function sync(): void {
     guarded('row sync', () => { push(customBrand) })
@@ -562,8 +577,47 @@ function applyStages(
   guarded('theme state adoption', () => {
     ctx.effect(() => themeBackend.subscribe(sync), 'dsh-yizi-themes: theme state adoption')
   })
+
+  // ── Language adoption ─────────────────────────────────────────────────
+  // Theme names and descriptions are resolved through `t(...)`, but the row
+  // store caches the resolved `themes` array. Switching the UI language does
+  // NOT change the theme id or the light/dark preference, so `themeBackend`
+  // never fires — without this subscription the section would keep rendering
+  // the previous language until some other action happened to re-sync it
+  // (the reported symptom: themes stayed in the old language until a theme
+  // was clicked). The locale service notifies on language switches and on
+  // late dictionary registration, so re-pushing here makes the section and
+  // the header picker follow immediately.
+  {
+    const localeService = ctx.get('locale') as
+      | { subscribe?: (fn: () => void) => () => void }
+      | undefined
+    const onLanguageChanged = (): void => {
+      guarded('language notify', () => {
+        // The store re-resolves its cached text and wakes its own subscribers
+        // (the header picker's useSyncExternalStore).
+        themesStore.notifyLanguageChange()
+        sync()
+      })
+    }
+    guarded('language adoption', () => {
+      if (localeService === undefined || typeof localeService.subscribe !== 'function') return
+      ctx.effect(() => {
+        if (typeof localeService.subscribe !== 'function') return () => {}
+        return localeService.subscribe(onLanguageChanged)
+      }, 'dsh-yizi-themes: language adoption')
+    })
+  }
+
   guarded('row dictionaries', () => {
-    ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'dsh-yizi-themes: row dictionaries')
+    // Every language the 0.2.2 generation ships a UI for (zh, en, ja, es,
+    // fr, de, ru, pt-BR). The zh dictionary is the key-set source of truth and
+    // the others are compile-checked against it, so a missing translation is
+    // a build error rather than a silent fallback.
+    ctx.effect(
+      () => ctx.locale.register(SETTINGS_NS, { zh, en, ja, es, fr, de, ru, pt }),
+      'dsh-yizi-themes: settings dictionaries',
+    )
   })
 
   const injected = (actions: ReturnType<typeof store['create']>['actions']): AppearanceRowInjected => {
@@ -606,21 +660,43 @@ function applyStages(
       if (parsed.result.themeId !== undefined) themeBackend.setThemeId(parsed.result.themeId)
     })
   }
-  // The row is the whole point of the plugin: register it LAST but tolerate a
-  // second apply (the id taken by a previous fiber) instead of failing.
-  guarded('appearance row', () => {
-    ctx.slots.inject('settings.general.item', () => {
+  // ── The plugin's own settings SECTION ─────────────────────────────────
+  // Registered LAST (it is the whole point of the plugin) but duplicate-
+  // tolerant, so a second apply cannot fail the boot. A `settings.section`
+  // contribution gives the plugin a first-class navigation row of its own —
+  // instead of an item buried inside General — which is also what lets the
+  // section-icon slot address it.
+  guarded('appearance section', () => {
+    ctx.slots.inject('settings.section', () => {
       try {
         return ctx.slots.register({
-          name: 'settings.general.item',
-          id: 'yizi-appearance',
-          order: 20,
-          store,
+          name: 'settings.section',
+          id: SECTION_ID,
+          // After General and the built-in pages; below the account/plugin
+          // sections that pin themselves near the top with negative orders.
+          order: 30,
+          label: () => t('section.nav'),
           locale: SETTINGS_NS,
+          store,
           inject: injected,
         }, AppearanceRow)
       } catch (error) {
-        console.warn('[yizi-themes] appearance row already registered', error)
+        console.warn('[yizi-themes] appearance section already registered', error)
+        return () => {}
+      }
+    })
+  })
+
+  // ── Navigation icon for that section ──────────────────────────────────
+  // `settings.section.icon` renders only for a row whose id matches, and the
+  // shell keeps its default gear when nothing is registered — so this degrades
+  // to the core glyph on a core that lacks the slot, never to a blank row.
+  guarded('appearance section icon', () => {
+    ctx.slots.inject('settings.section.icon', () => {
+      try {
+        return ctx.slots.register({ name: 'settings.section.icon', id: SECTION_ID }, ThemeSectionIcon)
+      } catch (error) {
+        console.warn('[yizi-themes] appearance section icon already registered', error)
         return () => {}
       }
     })

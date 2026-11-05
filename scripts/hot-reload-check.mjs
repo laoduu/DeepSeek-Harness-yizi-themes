@@ -331,10 +331,25 @@ check('neither apply throws', () => {
   if (applyThrew !== 0) throw new Error(`${applyThrew} apply call(s) threw`)
 })
 
-check('the settings row is registered exactly once', () => {
-  const ids = slotTable.list.get('settings.general.item')
+check('the settings section is registered exactly once', () => {
+  const ids = slotTable.list.get('settings.section')
   if (ids === undefined || ids.size !== 1) {
-    throw new Error(`expected 1 row registration, got ${ids === undefined ? 0 : ids.size}`)
+    throw new Error(`expected 1 section registration, got ${ids === undefined ? 0 : ids.size}`)
+  }
+  if (!ids.has('yizi-themes')) throw new Error(`unexpected section id(s): ${[...ids].join(', ')}`)
+})
+
+check('the section navigation icon is registered for the same id', () => {
+  const icons = slotTable.list.get('settings.section.icon')
+  if (icons === undefined || !icons.has('yizi-themes')) {
+    throw new Error('the section icon is missing or registered under a mismatched id')
+  }
+})
+
+check('no registration remains in settings.general.item', () => {
+  const ids = slotTable.list.get('settings.general.item')
+  if (ids !== undefined && ids.size > 0) {
+    throw new Error(`the section must not also appear inside General (found ${[...ids].join(', ')})`)
   }
 })
 

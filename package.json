@@ -1,7 +1,7 @@
 {
   "name": "dsh-yizi-themes",
-  "version": "0.5.6",
-  "description": "YiziMarkdown theme pack for DeepSeek Harness — 19 style themes with custom brand and prompt mapping.",
+  "version": "0.5.7",
+  "description": "YiziMarkdown theme pack for DeepSeek Harness — 19 style themes, Theme Studio custom themes, custom brand, WCAG contrast checks and config transfer.",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -12,6 +12,9 @@
       "default": "./dist/client.js"
     },
     "./package.json": "./package.json"
+  },
+  "engines": {
+    "dsh": ">=0.1.2-alpha.1"
   },
   "dsh": {
     "client": {
@@ -37,9 +40,32 @@
   ],
   "scripts": {
     "prepare": "node prepare.mjs",
-    "build": "node prepare.mjs"
+    "build": "node prepare.mjs",
+    "typecheck": "node scripts/typecheck.mjs",
+    "test": "node scripts/self-check.mjs && node scripts/hot-reload-check.mjs",
+    "verify": "node scripts/typecheck.mjs && node scripts/self-check.mjs && node scripts/hot-reload-check.mjs && node prepare.mjs",
+    "pack:tgz": "node prepare.mjs && npm pack"
   },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis-plugin",
+    "theme",
+    "themes",
+    "appearance",
+    "custom-brand",
+    "yizimarkdown"
+  ],
+  "author": "laoduu",
   "license": "MIT",
+  "homepage": "https://github.com/laoduu/DeepSeek-Harness-yizi-themes#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laoduu/DeepSeek-Harness-yizi-themes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laoduu/DeepSeek-Harness-yizi-themes/issues"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
     "@deepseek-ai/dsh-client-store": "*",

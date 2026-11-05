@@ -3,6 +3,7 @@ node_modules/
 *.tsbuildinfo
 lib/
 dist/
+tsconfig.typecheck.generated.json
 
 # Editors / OS
 .vscode/

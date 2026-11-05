@@ -30,6 +30,11 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 - 📐 **Adjustable brand size** (0.5.4): one overall scale (75%–200%) for the top-left logo, wordmark and badge (Settings → Appearance → Custom → Brand size), applied live — no restart needed
 - 🔤 **Prompt mapping** (experimental, off by default): replace "DeepSeek / 深度求索 / Harness" in the UI/output with your brand words (never rewrites what you are typing)
 - ⌨️ **`/theme` command and Doctor** (0.5.6): type `/theme` to switch themes or list them, and `/theme doctor` for a live installation self-check (module hits, slots, token coverage)
+- 🎯 **Live contrast checking** (0.5.7): the Theme Studio computes WCAG 2.1 ratios for brand/text on both bases while you edit and rates them AAA / AA / large-only / fail; saved themes carry a badge for their weakest pair — taste stays yours, readability gets a number
+- 💾 **Backup and migration** (0.5.7): export custom themes plus brand settings to JSON and import them back (same-name themes update in place). This bridges the localStorage islands between the web and desktop profiles and between browsers, and lets you hand a theme pack to someone else
+- 📱 **Narrow-screen and touch support** (0.5.7): the theme grid, studio editor, saved list and mapping table reflow on phone widths, and touch devices get larger hit targets
+- 🎲 **`/theme` action rows** (0.5.7): the popup gains "pick a random theme", "import settings" and "export settings"
+- 🧪 **Release gate** (0.5.7): typecheck (`tsc --noEmit`, aimed at fatal errors such as undeclared identifiers), 22 pure-logic self-checks, and a double-apply boot regression against the real built bundle — all on CI
 - 📍 **Controls everywhere**: theme picker + mode toggle in the session header, and floating controls on blank new sessions
 
 ---
@@ -69,10 +74,10 @@ A standard **Cordis plugin**: install with `dsh plugin` — no Harness source ch
 
 ### Option 1: Download the tgz from GitHub Releases (recommended)
 
-1. Download `dsh-yizi-themes-0.5.6.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
+1. Download `dsh-yizi-themes-0.5.7.tgz` — from the [Releases page](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases), or straight from the CLI:
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.6/dsh-yizi-themes-0.5.6.tgz
+curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
 ```
 
 2. Stop the running `dsh web` (Ctrl+C);
@@ -80,7 +85,7 @@ curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <your deepseek-harness path>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.6.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.7.tgz
 ```
 
 > 💡 **DSH Desktop App users**: use `--profile desktop` instead — the desktop app
@@ -147,6 +152,25 @@ Settings → Appearance → **Custom theme**:
 
 Leave any field empty to stay automatic. Saved themes can be edited again, and deletion is instant.
 
+**Live contrast checking** (0.5.7): while you edit, the studio shows four WCAG 2.1 ratios — brand/light, text/light, brand/dark, text/dark — rated AAA (≥7:1) / AA (≥4.5:1) / large-only (≥3:1) / fail. The badge on each saved theme reports its **weakest** pair; hover it for the exact relationship and value. Whether a palette looks good is a matter of taste; whether it is readable has a number.
+
+---
+
+## 💾 Backup and Migration (0.5.7)
+
+Settings → Appearance → **Settings backup**: export "custom themes + brand settings" as one JSON file, or import it back.
+
+| Situation | How |
+|---|---|
+| **New browser / new machine** | Export from the old environment, import in the new one |
+| **Moving from web to desktop (or back)** | The two profiles have separate localStorage; this is the bridge |
+| **Before editing a theme** | Export is a backup; import to roll back |
+| **Sharing a theme pack** | Whoever imports your JSON gets the same themes and brand |
+
+Imports **merge by id**: a theme with the same id is updated in place (no duplicates), new themes are appended, and the file's brand settings plus selected theme are applied. Missing fields and broken entries are skipped with a notice instead of failing the whole file.
+
+You can also type `/theme` and use the action rows at the bottom of the popup: random theme, import settings, export settings.
+
 ---
 
 ## 🖌️ Custom Branding
@@ -160,7 +184,7 @@ Settings → Appearance → **Custom**:
 | **Badge** | Small badge next to the wordmark (default `HARNESS`) |
 | **Headline** | New-session page headline (default `探索未至之境`) |
 | **Brand size** | One slider scaling the top-left logo, wordmark and badge together (75%–200%, default 100%); applied live, no restart — the sidebar brand row grows to fit, so nothing gets clipped |
-| **Brand mappings** | Toggle (off by default, experimental) + mapping table replacing "DeepSeek Harness / DeepSeek / 深度求索 / Harness" in the UI/output; never rewrites input fields |
+| **Brand mappings** | Toggle (off by default, experimental) + mapping table replacing "DeepSeek Harness / DeepSeek / 深度求索 / Harness" on reading surfaces; **code blocks, terminal output and input fields are never rewritten** — there those strings are data, not branding |
 
 **Colors follow the theme automatically**: wordmark, badge background, and the logo container all use
 `--dsw-alias-brand-primary`, so they change with any style theme and light/dark mode.
@@ -250,7 +274,7 @@ Hand the [Agent install guide](docs/AGENT-SKILL.md) to the agent.
 
 Pull requests welcome:
 
-- **New themes**: see the [dev log](docs/DEVLOG.md) and `scripts/gen-themes.mjs` (CSS → TS generator);
+- **New themes**: the 19 designs live as CSS in [`themes/css/`](themes/css); regenerate `src/client/themes.ts` with `scripts/gen-themes.mjs` (`node scripts/gen-themes.mjs themes/css src/client/themes.ts`), or drop a new CSS file in the same shape. See the [dev log](docs/DEVLOG.md);
 - **Bug fixes**: adaptations for newer Harness versions;
 - **Docs**: installation guide and FAQ improvements.
 
@@ -260,6 +284,7 @@ Pull requests welcome:
 
 - [Changelog](CHANGELOG.md)
 - [Development log](docs/DEVLOG.md)
+- [Compatibility audit: Harness 0.2.2-rc.1](docs/COMPAT-0.2.2-rc.1.md)
 - [Agent install guide](docs/AGENT-SKILL.md)
 
 ---

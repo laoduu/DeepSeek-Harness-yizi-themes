@@ -11,29 +11,13 @@ import { mkdirSync, rmSync, copyFileSync, readdirSync, renameSync } from 'node:f
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
+import { requireTsdown } from './scripts/harness-resolve.mjs'
 
-// Resolve tsdown from the Harness checkout (not a dependency of this package).
-// Try in order: $DSH_HARNESS (explicit), the original dev-machine path the
-// plugin was authored against, the sibling checkout on this machine, then any
-// path found by walking up from the cwd. Fail loudly with guidance.
-import { existsSync } from 'node:fs'
+// Resolve tsdown from a Harness checkout (it is not a dependency of this
+// package). The resolver checks $DSH_HARNESS, then ancestor and sibling
+// directories of the cwd — no machine-specific paths. Fail loudly with guidance.
 const require = createRequire(import.meta.url)
-const tsdownCandidates = [
-  process.env.DSH_HARNESS,
-  'C:/Users/Administrator/deepseek-harness',
-  'E:/mycode/deepseek-harness',
-].filter(Boolean).map((base) => `${base.replace(/[\\/]+$/, '')}/node_modules/tsdown/dist/index.mjs`)
-let tsdownEntry
-for (const candidate of tsdownCandidates) {
-  if (existsSync(candidate)) { tsdownEntry = candidate; break }
-}
-if (tsdownEntry === undefined) {
-  console.error(
-    'dsh-yizi-themes: could not locate tsdown. Point $DSH_HARNESS at your DeepSeek Harness checkout,\n' +
-    'or add its node_modules/tsdown/dist/index.mjs to the candidate list in prepare.mjs.',
-  )
-  process.exit(1)
-}
+const { entry: tsdownEntry } = requireTsdown()
 const { build } = require(tsdownEntry)
 
 const root = dirname(fileURLToPath(import.meta.url))

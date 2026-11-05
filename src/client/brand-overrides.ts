@@ -21,6 +21,9 @@ export default `/**
  * Modern (rc.8+) brand slots render through OUR OWN wrappers, so the sizing
  * and ink for those come from the \`[data-yizi-*]\` rules at the bottom.
  * Full coverage audit against 0.2.1-rc.3: docs/COMPAT-0.2.1-rc.3.md.
+ *
+ * NOTE: this file is the readable mirror of src/client/brand-overrides.ts
+ * (the template string that actually ships in the bundle) — keep both in sync.
  */
 
 /* ── Alias compatibility (Harness 0.2.1) ─────────────────────────────────
@@ -112,6 +115,17 @@ body[class*="theme-"] {
   --dsw-alias-onboarding-card-fill: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 80%, transparent);
   --dsw-alias-onboarding-secondary-fill: var(--dsw-alias-bg-layer-2);
   --dsw-alias-onboarding-checkbox-border: color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+
+  /* ── 0.2.2 coverage (docs/COMPAT-0.2.2-rc.1.md) ── */
+
+  /* Task "done" state joined the state family in 0.2.2; it is the same
+     vocabulary as success, so it rides the theme's success voice instead of
+     whatever neutral the core falls back to on a tinted theme. */
+  --dsw-alias-state-done-primary: var(--dsw-alias-state-success-primary);
+  /* The violet statics feed newer surfaces; keep them in the theme's own
+     violet family so they do not read as a foreign accent. */
+  --dsw-static-violet-400: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, #8b7bd8);
+  --dsw-static-violet-600: color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, #5b4b9e);
 }
 
 /* Dark-mode-specific inversions: the core's dark palette flips these

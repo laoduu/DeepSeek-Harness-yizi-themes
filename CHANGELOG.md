@@ -1,5 +1,76 @@
 # 版本日志 / Changelog
 
+## 0.5.7 — 2026-11-06
+
+> 一轮"How the plugin behaves on the next Harness and for people who don't hand-tune colors"的改造：
+> 0.2.2 兼容审计（结论：零破坏性变更）、手机/平板适配、主题工作室的对比度与配置迁移、
+> 以及把 0.5.6 那两次事故的教训变成发布门禁。
+
+### 兼容性
+
+- **0.2.2-rc.1 兼容审计**（新文档 [docs/COMPAT-0.2.2-rc.1.md](docs/COMPAT-0.2.2-rc.1.md)）：一次性覆盖
+  rc.3 → rc.4 → rc.5 → 0.2.2-rc.1。**P0 破坏性问题 0 个** —— 槽位契约（`settings.general.item` /
+  `conversation.session.header.utilities` / 三个品牌槽）、主题运行时（`getTheme` / `setTheme` /
+  `register` / `theme/change`）、`ThemePresenter` 的 body 内联 token 机制、`/theme` 的 `popupSelect`
+  契约、`data-conversation-header-corner` 与 `[data-sidebar-right-*]` 避让锚点、桌面
+  `--dsh-windows-titlebar-height`（仍 40px）、hero `titleGroup` 结构——全部保留。
+- **令牌差集**：rc.3 的 436 个 `--dsw-*` 对 rc.1 的 450 个，新增 14 个、移除 1 个
+  （`--dsw-specific-sidebar-nav-item-hover`，插件多定义无副作用）。新增项中
+  `--dsw-alias-state-done-primary` 与两个 violet static 已在 0.5.7 纳入主题推导。
+- **声明 `engines.dsh`**：`>=0.1.2-alpha.1`。上游自 0.2.1-rc.1 起优先按该字段判断第三方兼容性
+  （`packages/boot/app-boot/src/plugin-compatibility.ts`）。此前未声明，上游会退化为扫描
+  `peerDependencies` 里的 `@deepseek-ai/dsh*` 条目。
+
+### 新增
+
+- **WCAG 对比度实时检查**：主题工作室编辑时实时计算「品牌/文字 × 亮/暗底」四组对比度
+  （`src/client/contrast.ts`，标准 sRGB 相对亮度公式），给出 AAA / AA / 仅大字号 / 不达标；
+  已存主题列表带「最差一组」徽标，悬停显示具体分值与对应关系。
+- **配置备份与迁移**：一键导出/导入 JSON（`src/client/transfer.ts` + `transfer-ui.tsx`）。
+  文档格式带 `format` / `version` 标记，导入按 id 合并（同名覆盖、新主题追加），
+  并能容忍残缺文件（逐项丢弃 + 警告）。跨浏览器、Web/桌面 profile 迁移与"把主题包发给别人"都靠它。
+- **`/theme` 操作行**：弹出菜单新增「随机换一个主题 / 导入配置 / 导出配置」三行。
+- **窄屏与触屏适配**：按上游 0.2.2 的移动端主断点 `767px` 与 `pointer: coarse` 调整
+  主题网格、工作室编辑行与已存列表、映射表、对比度面板、传输按钮；触屏抬高点击目标。
+- **品牌映射收窄**：改写范围排除代码块（`code` / `pre` / `kbd` / `samp` / `var`）、
+  输入区（`input` / `textarea` / `select` / `contenteditable`）与插件自身 UI。
+  此前在代码块或终端输出里，`DeepSeek` 是数据而不是品牌，被替换会直接改坏用户的代码段落。
+
+### 工程改进
+
+- **类型门禁**（`npm run typecheck`）：`tsc --noEmit` 覆盖本地源码，平台模块以显式 shim 声明为
+  `any`。目标不是跨代 API 严格对齐（插件必须容忍多代 Harness 的导出差异），而是
+  **只抓本地致命错误** —— 未声明标识符（0.5.6 `inkL` 事故的确切类型）、自有类型的错属性、死导入。
+  已用探针验证能命中 `TS2304`。
+- **纯逻辑自检**（`npm run test`，22 项）：OKLCH 派生引擎（两种描边声部都覆盖，正是 0.5.6
+  抛 `ReferenceError` 的分支）、`!important` 发射完整性、WCAG 阈值边界、导入导出往返与容错、
+  合并去重、主题清单完整性。
+- **双次 apply 崩溃回归**（`scripts/hot-reload-check.mjs`）：加载**真实 `dist/client.js`**，
+  用忠实还原核心校验的最小 slots 服务（single 槽同优先级重复注册会真的抛错）连续 `apply` 两次。
+  断言：两次均不抛出、外观行与品牌槽各 1 份、`<style>` 宿主只 1 个、bootlog 无 `FAIL:`。
+  这是 0.5.6「启动失败 / 控制模块消失」事故的回归测试，也覆盖上游 0.2.2
+  「插件热更新 + 失败回滚」与「启停插件时其他插件样式被移除」两个点。
+- **GitHub Actions CI**：固定检出 Harness rc.1 作为工具链，跑 scripts 语法检查 → 类型门禁 →
+  自检 → 构建 → 双次 apply 回归 → 产物校验；Node 24.9（0.2.2 最低要求）。
+- **构建可移植**：`prepare.mjs` 不再硬编码两台机器的 Harness 路径，改由
+  `scripts/harness-resolve.mjs` 按 `$DSH_HARNESS` → 祖先目录 → 相邻检出 的顺序解析。
+- **仓库清理**：删除早期"源码覆盖"方案遗留（`patch/`、`install.sh`、`install.ps1`、
+  `MANIFEST.json`）与孤儿 `AppearanceRow.module.css`。**19 套主题的 CSS 设计源迁入
+  `themes/css/`** —— 它才是 `src/client/themes.ts` 的生成输入（已验证逐行一致），
+  之前埋在废弃目录里。
+- **`package.json` 补全索引元数据**：`description`、`keywords`、`author`、`homepage`、
+  `repository`、`bugs`、`engines.dsh`。
+
+### 说明（未做的 P2）
+
+- 上游 0.2.2 新增 6 种界面语言（ja / es / fr / de / ru / pt-BR）：本插件字典仍为中英两套。
+  英文完整性由 `Record<ThemeKey, string>` 在编译期强制，未覆盖的语言回退英文。
+- 上游"插件可为设置页提供导航图标"作用于**设置分区**（`settings.section.icon`），
+  本插件注册的是 General 分区内的 item，不在该槽作用域。
+- 上游"统一右键/键盘菜单"可作为切主题入口，本次未接入。
+
+---
+
 ## 0.5.6 — 2026-10-28
 
 > 自 0.5.4 以来的一整轮改造：主题工作室、五声部派生引擎、自定义主题真正生效，以及两次把它们拖下水的启动/样式故障的根治。开发期间用过的 0.5.5–0.6.5 只是本地测试版本号，全部合并为本次发布。

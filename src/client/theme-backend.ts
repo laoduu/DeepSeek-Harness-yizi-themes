@@ -43,7 +43,8 @@ export interface ThemeBackend {
   reassert(): void
 }
 
-const THEME_STORAGE_KEY = 'dsh-yizi-themes:themeId'
+/** localStorage key of the active style-theme id (also read by transfer/UI code). */
+export const THEME_STORAGE_KEY = 'dsh-yizi-themes:themeId'
 
 /** Style-theme ids this plugin owns (`body.theme-<id>`); only these are cleaned. */
 const OWNED_THEME_IDS: ReadonlySet<string> = new Set(THEMES.map((theme) => theme.id))

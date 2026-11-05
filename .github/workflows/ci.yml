@@ -1,0 +1,82 @@
+name: CI
+
+# The plugin builds against the Harness toolchain (tsdown, typescript and the
+# @deepseek-ai/* platform packages live in a Harness checkout, not on npm), so
+# the workflow checks out the pinned Harness tag alongside the plugin and
+# points DSH_HARNESS at it. The same resolver scripts/typecheck.mjs uses locally
+# runs unchanged in CI.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Bump together with the docs/COMPAT-*.md audit baseline.
+      HARNESS_TAG: dsh-v0.2.2-rc.1
+    steps:
+      - name: Check out the plugin
+        uses: actions/checkout@v4
+
+      - name: Check out the Harness toolchain (pinned tag)
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: ${{ env.HARNESS_TAG }}
+          path: .harness
+          fetch-depth: 1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # 0.2.2 requires Node >= 24.9.
+          node-version: 24.9
+          cache: pnpm
+          cache-dependency-path: .harness/pnpm-lock.yaml
+
+      - name: Install Harness dependencies
+        working-directory: .harness
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Syntax-check standalone scripts
+        run: |
+          node --check prepare.mjs
+          node --check scripts/harness-resolve.mjs
+          node --check scripts/typecheck.mjs
+          node --check scripts/self-check.mjs
+          node --check scripts/gen-themes.mjs
+
+      - name: Typecheck (tsc --noEmit via the Harness toolchain)
+        env:
+          DSH_HARNESS: ${{ github.workspace }}/.harness
+        run: node scripts/typecheck.mjs
+
+      - name: Self-check (derivation, contrast, transfer)
+        env:
+          DSH_HARNESS: ${{ github.workspace }}/.harness
+        run: node scripts/self-check.mjs
+
+      - name: Build the plugin bundle
+        env:
+          DSH_HARNESS: ${{ github.workspace }}/.harness
+        run: node prepare.mjs
+
+      - name: Hot-reload / double-apply contract (real built bundle)
+        run: node scripts/hot-reload-check.mjs
+
+      - name: Verify build artifacts
+        run: |
+          test -f dist/index.js
+          test -f dist/client.js
+          test -f dist/cordis.patch.yml
+          # The client bundle must hand itself to the platform module loader.
+          grep -q '__ModuleLoader__' dist/client.js

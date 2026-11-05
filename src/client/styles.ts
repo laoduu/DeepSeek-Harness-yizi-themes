@@ -619,4 +619,223 @@ button:has(> [data-yizi-rail="1"]):hover [data-yizi-rail="1"] {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
+
+/* ── Contrast (WCAG) readout ─────────────────────────────────────────── */
+
+.dsw-yizi-contrast {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+}
+
+.dsw-yizi-contrast-title {
+  font-size: var(--dsw-yizi-fs-md);
+  line-height: var(--dsw-yizi-lh-md);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-contrast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.dsw-yizi-contrast-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-xs);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-contrast-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsw-yizi-contrast-ratio {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsw-yizi-contrast-rating {
+  flex: none;
+  font-weight: 600;
+}
+
+.dsw-yizi-contrast-item.ok .dsw-yizi-contrast-rating,
+.dsw-yizi-contrast-badge.ok {
+  color: var(--dsw-alias-state-success-primary, var(--dsw-alias-brand-primary));
+}
+
+.dsw-yizi-contrast-item.warn .dsw-yizi-contrast-rating,
+.dsw-yizi-contrast-badge.warn {
+  color: var(--dsw-alias-state-warn-label);
+}
+
+.dsw-yizi-contrast-item.fail .dsw-yizi-contrast-rating,
+.dsw-yizi-contrast-badge.fail {
+  color: var(--dsw-alias-label-error);
+}
+
+.dsw-yizi-contrast-badge {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 999px;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-xs);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* ── Configuration transfer (export / import) ────────────────────────── */
+
+.dsw-yizi-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+}
+
+.dsw-yizi-transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dsw-yizi-transfer-actions .dsw-yizi-doctor-run {
+  align-self: auto;
+}
+
+/* The real input stays out of the way; the visible button drives it. */
+.dsw-yizi-transfer-file {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dsw-yizi-transfer-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  list-style: none;
+  font-size: var(--dsw-yizi-fs-sm);
+  line-height: var(--dsw-yizi-lh-sm);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsw-yizi-transfer-feedback.ok {
+  border-color: var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsw-yizi-transfer-feedback.error {
+  color: var(--dsw-alias-label-error);
+}
+
+/* ── Narrow screens / touch (Harness 0.2.2 mobile support) ───────────── */
+/* The studio editor's name+preview row and the item rows are the only
+   horizontal layouts in this row that cannot simply wrap; stack them when
+   the settings column gets phone-narrow, and let the action buttons wrap. */
+
+@media (max-width: 767px) {
+  .dsw-yizi-theme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  }
+
+  .dsw-yizi-studio-row {
+    flex-wrap: wrap;
+  }
+
+  .dsw-yizi-studio-name {
+    flex: 1 1 100%;
+  }
+
+  .dsw-yizi-studio-previews .dsw-yizi-mock {
+    width: 72px;
+  }
+
+  .dsw-yizi-studio-item {
+    flex-wrap: wrap;
+  }
+
+  .dsw-yizi-studio-item-name {
+    flex: 1 1 auto;
+  }
+
+  .dsw-yizi-studio-item-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .dsw-yizi-mapping-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dsw-yizi-contrast-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dsw-yizi-transfer-actions {
+    flex-direction: column;
+  }
+
+  .dsw-yizi-transfer-actions .dsw-yizi-doctor-run {
+    width: 100%;
+  }
+
+  .dsw-yizi-scale-row {
+    flex-wrap: wrap;
+  }
+
+  .dsw-yizi-scale-value {
+    min-width: 0;
+  }
+}
+
+/* Touch targets: the chips and row actions are below the 44px comfort size,
+   and coarse pointers cannot rely on hover to reveal anything. */
+@media (pointer: coarse) {
+  .dsw-yizi-studio-chip {
+    padding: 6px 12px;
+    min-height: 32px;
+  }
+
+  .dsw-yizi-studio-action {
+    padding: 6px 12px;
+    min-height: 32px;
+  }
+
+  .dsw-yizi-doctor-run {
+    min-height: 34px;
+    padding: 6px 14px;
+  }
+
+  .dsw-yizi-theme-card {
+    padding: 10px;
+  }
+}
 `

@@ -32,6 +32,8 @@ import type { DoctorReport } from './doctor.tsx'
 import { themesStore } from './themes-store.ts'
 import { customThemesCss } from './custom-themes.ts'
 import type { CustomThemeDoc } from './custom-themes.ts'
+import { buildTransferPayload, parseTransfer, serializeTransfer, mergeThemes } from './transfer.ts'
+import { downloadText, pickTransferFile } from './transfer-ui.tsx'
 import { DEFAULT_THEME } from './theme-settings.ts'
 
 /** Plugin identity. */
@@ -77,7 +79,24 @@ function readCoreTheme(ctx: Context): { preference: ThemePreference; theme: stri
   return { preference: snapshot.preference ?? 'system', theme }
 }
 
-/** Apply brand mappings to every text node under a root element. */
+/**
+ * Elements whose text must NEVER be rewritten by the brand mapping.
+ *
+ * The mapping is a cosmetic rebranding aid, and a blind whole-page replacement
+ * cannot tell "the product" from "the thing the user is talking about": inside
+ * a code block or a terminal output, `DeepSeek` is data (an API name, a
+ * package, a log line) and rewriting it corrupts the content the user asked
+ * for. Code, terminal surfaces and every editable field are therefore
+ * excluded — only prose on the chrome/reading surfaces is rebranded.
+ */
+const MAPPING_SKIP_SELECTOR = [
+  'code', 'pre', 'kbd', 'samp', 'var',
+  'input', 'textarea', 'select',
+  '[contenteditable="true"]', '[contenteditable=""]',
+  '.dsw-yizi-transfer', '[data-yizi-logo]',
+].join(', ')
+
+/** Apply brand mappings to every eligible text node under a root element. */
 function replaceBrandInNode(root: ParentNode, mappings: CustomBrandConfig['mappings']): void {
   if (!mappings.enabled) return
   const replacements: ReadonlyArray<[string, string]> = [
@@ -90,11 +109,11 @@ function replaceBrandInNode(root: ParentNode, mappings: CustomBrandConfig['mappi
   const textNodes: Text[] = []
   while (walker.nextNode()) {
     const node = walker.currentNode as Text
-    // NEVER rewrite text the user is typing: anything inside an input,
-    // textarea, or contenteditable (the composer, settings fields) is left
-    // exactly as authored.
+    // NEVER rewrite the user's own text: input/textarea/contenteditable (the
+    // composer, settings fields) stay exactly as authored, and so do code and
+    // terminal surfaces, where these strings are data rather than branding.
     const parent = node.parentElement
-    if (parent !== null && parent.closest('input, textarea, [contenteditable="true"], [contenteditable=""]')) {
+    if (parent !== null && parent.closest(MAPPING_SKIP_SELECTOR)) {
       continue
     }
     textNodes.push(node)
@@ -159,18 +178,22 @@ function buildInjected(
   ctx: Context,
   settings: CustomBrandConfig,
   setSettings: (patch: Partial<CustomBrandConfig>) => void,
+  replaceSettings: (brand: CustomBrandConfig) => void,
   writeThemeId: (id: string) => void,
   runDoctor: () => DoctorReport,
   listCustomThemes: () => CustomThemeDoc[],
   saveCustomTheme: (doc: CustomThemeDoc) => void,
+  replaceCustomThemes: (docs: CustomThemeDoc[]) => void,
   removeCustomTheme: (id: string) => void,
 ): AppearanceRowInjected {
   return {
     setThemeId: (id) => { writeThemeId(id) },
     setCustomBrand: (patch) => { setSettings(patch) },
+    replaceCustomBrand: (brand) => { replaceSettings(brand) },
     runDoctor,
     listCustomThemes,
     saveCustomTheme,
+    replaceCustomThemes,
     removeCustomTheme,
   }
 }
@@ -280,6 +303,18 @@ function applyStages(
   // core without the commandUi service the inner fiber stays PENDING and the
   // plugin activates without the command — no crash path.
   const t = ctx.locale.bind(SETTINGS_NS)
+  /**
+   * Action rows of the /theme popup. Declared before the registration so the
+   * contribution can close over them; populated at the end of apply, once the
+   * transfer handlers exist. `options()` is evaluated at user time, so the
+   * rows appear against the finished implementation rather than a half-built
+   * one.
+   */
+  const commandActions: {
+    random?: () => void
+    importConfig?: () => void
+    exportConfig?: () => void
+  } = {}
   guarded('theme command', () => {
     registerThemeCommand(ctx, {
       backend: themeBackend,
@@ -289,6 +324,9 @@ function applyStages(
       },
       setPreference: (preference) => { runtime.setTheme(preference) },
       translate: (key) => t(key as ThemeKey),
+      onRandom: () => { commandActions.random?.() },
+      onImport: () => { commandActions.importConfig?.() },
+      onExport: () => { commandActions.exportConfig?.() },
     })
   })
 
@@ -408,6 +446,46 @@ function applyStages(
     if (themeBackend.readThemeId() === id) themeBackend.setThemeId(DEFAULT_THEME)
   }
 
+  /**
+   * Bulk-replace the custom theme set (JSON import / merge). Sheets and the
+   * core registry are refreshed exactly like the single-document path so an
+   * import is visible immediately.
+   */
+  const replaceCustomThemes = (docs: CustomThemeDoc[]): void => {
+    themesStore.set(docs)
+    refreshSheets()
+    if (themeBackend.coreThemeApi && typeof (runtime as ThemeRuntime).register === 'function') {
+      for (const doc of docs) {
+        try {
+          runtime.register({
+            id: doc.id,
+            colorScheme: 'light',
+            tokens: {},
+            name: doc.name,
+            swatch: [doc.lightBg, doc.accent],
+            desc: '',
+          })
+        } catch { /* already registered under this id */ }
+      }
+    }
+    // An import can retire the currently applied custom theme.
+    const active = themeBackend.readThemeId()
+    if (active.startsWith('custom-') && !docs.some((doc) => doc.id === active)) {
+      themeBackend.setThemeId(DEFAULT_THEME)
+    }
+  }
+
+  /** Pick a random theme, never the one already active. */
+  const pickRandomTheme = (): void => {
+    const all = themesStore.all()
+    if (all.length === 0) return
+    const current = themeBackend.readThemeId()
+    const candidates = all.filter((theme) => theme.id !== current)
+    const pool = candidates.length > 0 ? candidates : all
+    const chosen = pool[Math.floor(Math.random() * pool.length)]
+    if (chosen !== undefined) themeBackend.setThemeId(chosen.id)
+  }
+
   // ── Custom-brand configuration (browser-local) ─────────────────────────
   // The brand document lives in localStorage next to the style-theme id. The
   // Harness settings transport serves only namespaces the Host composes, and
@@ -441,6 +519,22 @@ function applyStages(
     brandStore.set(customBrand)
     // Apply the brand to the sidebar/hero DOM live.
     guarded('brand apply', () => { applyBrand(customBrand) })
+  }
+
+  /**
+   * Bulk-replace the brand configuration (JSON import). Unlike the per-field
+   * patch path this takes a complete, already-normalized document, so the
+   * normalization happens once here and every consumer sees the same object.
+   */
+  const replaceCustomBrand = (brand: CustomBrandConfig): void => {
+    customBrand = {
+      ...brand,
+      mappings: { ...customBrand.mappings, ...brand.mappings },
+    }
+    guarded('brand replace persist', () => { saveBrand(customBrand) })
+    guarded('brand replace row push', () => { push(customBrand) })
+    brandStore.set(customBrand)
+    guarded('brand replace apply', () => { applyBrand(customBrand) })
   }
 
   // ── Register our AppearanceRow as an ADDITIONAL general item ───────────
@@ -479,12 +573,38 @@ function applyStages(
       ctx,
       customBrand,
       setCustomBrand,
+      replaceCustomBrand,
       (id) => themeBackend.setThemeId(id),
       runDoctor,
       () => themesStore.customs(),
       saveCustomTheme,
+      replaceCustomThemes,
       removeCustomTheme,
     )
+  }
+
+  // ── /theme popup actions: random pick + full-config import/export ───────
+  // Populated here (after the transfer handlers exist) so the closures
+  // declared above always reach a complete implementation.
+  commandActions.random = pickRandomTheme
+  commandActions.exportConfig = (): void => {
+    const payload = buildTransferPayload(
+      themesStore.customs(),
+      customBrand,
+      themeBackend.readThemeId(),
+    )
+    downloadText(serializeTransfer(payload))
+  }
+  commandActions.importConfig = (): void => {
+    void pickTransferFile().then((text) => {
+      if (text === null) return
+      const parsed = parseTransfer(text)
+      if (!parsed.ok) return
+      const merged = mergeThemes(themesStore.customs(), parsed.result.themes)
+      replaceCustomThemes(merged)
+      replaceCustomBrand(parsed.result.brand)
+      if (parsed.result.themeId !== undefined) themeBackend.setThemeId(parsed.result.themeId)
+    })
   }
   // The row is the whole point of the plugin: register it LAST but tolerate a
   // second apply (the id taken by a previous fiber) instead of failing.

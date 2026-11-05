@@ -16,6 +16,7 @@ import type { DoctorReport } from './doctor.tsx'
 import { DoctorSection } from './doctor.tsx'
 import type { CustomThemeDoc } from './custom-themes.ts'
 import { StudioSection } from './theme-studio.tsx'
+import { TransferSection } from './transfer-ui.tsx'
 import { MockPreview } from './MockPreview.tsx'
 
 /** Injected business face: the theme/custom-brand writes. */
@@ -24,12 +25,16 @@ export interface AppearanceRowInjected {
   setThemeId: (id: string) => void
   /** Switch the custom brand configuration. */
   setCustomBrand: (patch: Partial<CustomBrandConfig>) => void
+  /** Replace the whole custom-brand configuration (bulk import). */
+  replaceCustomBrand?: (brand: CustomBrandConfig) => void
   /** Run the diagnostics self-check (present on every current build). */
   runDoctor?: () => DoctorReport
   /** Read the saved Theme Studio documents. */
   listCustomThemes?: () => CustomThemeDoc[]
   /** Persist a custom-theme document (insert or update). */
   saveCustomTheme?: (doc: CustomThemeDoc) => void
+  /** Replace the whole custom-theme set (bulk import / merge). */
+  replaceCustomThemes?: (docs: CustomThemeDoc[]) => void
   /** Delete a custom-theme document (reverts to default when it was active). */
   removeCustomTheme?: (id: string) => void
 }
@@ -82,9 +87,11 @@ export function AppearanceRow({
   t,
   setThemeId,
   setCustomBrand,
+  replaceCustomBrand,
   runDoctor,
   listCustomThemes,
   saveCustomTheme,
+  replaceCustomThemes,
   removeCustomTheme,
   useStore,
 }: AppearanceRowComponentProps) {
@@ -140,6 +147,22 @@ export function AppearanceRow({
             onApply={(id) => { setThemeId(id) }}
             onSave={(doc) => { saveCustomTheme(doc) }}
             onRemove={(id) => { removeCustomTheme(id) }}
+          />
+        </>
+      )}
+      {/* Backup / restore lives right after the studio: it is the bridge
+          across browsers and the Web/Desktop profile split. */}
+      {listCustomThemes !== undefined && replaceCustomThemes !== undefined && replaceCustomBrand !== undefined && (
+        <>
+          <div className="dsw-yizi-section-title">{t('transfer.title')}</div>
+          <TransferSection
+            customs={listCustomThemes()}
+            brand={customBrand}
+            themeId={themeId}
+            t={(key) => t(key as ThemeKey)}
+            onThemes={(docs) => { replaceCustomThemes(docs) }}
+            onBrand={(brand) => { replaceCustomBrand(brand) }}
+            onThemeId={(id) => { setThemeId(id) }}
           />
         </>
       )}

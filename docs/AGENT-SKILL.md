@@ -50,13 +50,13 @@ DeepSeek Harness 有两种形态，**一台电脑上可以同时存在、同时�
 
 **默认方式：直接下载发布包 tgz（无需源码、无需构建）**
 
-当前版本 **v0.5.6** 的准确下载地址：
+当前版本 **v0.5.7** 的准确下载地址：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.6/dsh-yizi-themes-0.5.6.tgz
+curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
 ```
 
-> ⚠️ **别凭记忆写版本号**：给用户的下载地址必须是 `v0.5.6`（本文件与 Release 同步）。如果用户要求更新版本，先去 Releases 页面确认最新 tag，再按第 60 行的固定 URL 格式拼出地址。
+> ⚠️ **别凭记忆写版本号**：给用户的下载地址必须是 `v0.5.7`（本文件与 Release 同步）。如果用户要求更新版本，先去 Releases 页面确认最新 tag，再按第 60 行的固定 URL 格式拼出地址。
 
 > **版本匹配**：0.5.x 面向 `dsh-client-store` / `configForms` 一代（Harness ≥ `v0.1.2-alpha.1`，含 `0.2.0-rc.2` / `0.2.1-rc.2` 桌面版）。若用户的 Harness 更老（客户端运行时仍为 `@deepseek-ai/dsh-client-runtime`，例如 rc.5 / rc.8），请改用 **0.3.x**。若用户报 `dsh-client-runtime missed the module table`，说明 Harness 是新版而插件是旧版，装最新版（≥ 0.4.0）即可。
 新版本请在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 获取，URL 格式固定为：
@@ -116,6 +116,9 @@ dsh plugin --profile <desktop|web> add  /path/to/dsh-yizi-themes-<version>.tgz
 | 设置 → 外观 | 出现"自定义"板块（Logo SVG / 品牌字样 / 徽章字样 / 新会话标题 / 品牌映射），以及主题卡片网格 |
 | 主题工作室（0.5.6+） | 设置 → 外观 → 自定义主题：填名称 + 选主题色 + 卡片实时预览，点"添加主题"后**立刻**出现在上方主题网格；已存主题带「应用 / 编辑 / 删除」，删除同样即时生效 |
 | `/theme` 命令（0.5.6+） | 会话输入框敲 `/theme` 出现主题选择弹层；`/theme list` 列出全部主题；`/theme doctor` 输出安装自检（命中模块、插槽、令牌覆盖率） |
+| 对比度检查（0.5.7+） | 设置 → 外观 → 自定义主题，编辑区下方出现四行 WCAG 对比度（品牌/文字 × 亮/暗底），带 AAA / AA / 仅大字号 / 不达标；已存主题带最差项徽标 |
+| 配置备份（0.5.7+） | 设置 → 外观 → **配置备份**：点「导出 JSON」应下载 `dsh-yizi-themes-<日期>.json`；点「导入 JSON」选同一文件应提示"已导入 N 个自定义主题"，且主题列表不出现重复项 |
+| `/theme` 操作行（0.5.7+） | `/theme` 弹层底部出现「随机换一个主题 / 导入配置 / 导出配置」三行 |
 | 持久化 | 浏览器 `localStorage`：`dsh-yizi-themes:brand`（自定义品牌）、`dsh-yizi-themes:themeId`（风格主题）、`dsh-yizi-themes:customThemes`（主题工作室的自定义主题） |
 | 切换主题 | `body.theme-<id>` 生效，左上角品牌色随主题/明暗变化 |
 | 品牌尺寸 | 设置 → 外观 → 自定义 → **品牌尺寸**滑块（0.5.4+，75%–200%）；拖动即时缩放左上角 Logo/字样/徽章且不被侧边栏裁切（数据在 localStorage `dsh-yizi-themes:brand` 的 `scale` 字段） |
@@ -137,7 +140,7 @@ grep -c "settingsScope" dist/client.js           # 期望 0
 
 | 现象 | 处理 |
 |---|---|
-| **装完后桌面版/网页端起不来（黑屏、无界面）** | 先看启动日志（桌面版：`%APPDATA%\@deepseek-ai\dsh-desktop\logs\crash-*-web-boot.log`）。若出现 `client-modules: require("<pkg>") missed the module table` + `web boot: 1 entry did not activate`，说明装的是**旧版插件**（≤0.4.0 依赖已删除的 `@deepseek-ai/dsh-client-runtime`）。**引导是全有或全无**，所以一个插件就能拖垮整个应用。处理：`dsh plugin --profile desktop remove dsh-yizi-themes`（纯命令行，不需要界面）→ 完全重启应用 → 改装最新版（当前 0.5.6） |
+| **装完后桌面版/网页端起不来（黑屏、无界面）** | 先看启动日志（桌面版：`%APPDATA%\@deepseek-ai\dsh-desktop\logs\crash-*-web-boot.log`）。若出现 `client-modules: require("<pkg>") missed the module table` + `web boot: 1 entry did not activate`，说明装的是**旧版插件**（≤0.4.0 依赖已删除的 `@deepseek-ai/dsh-client-runtime`）。**引导是全有或全无**，所以一个插件就能拖垮整个应用。处理：`dsh plugin --profile desktop remove dsh-yizi-themes`（纯命令行，不需要界面）→ 完全重启应用 → 改装最新版（当前 0.5.7） |
 | **装完能启动，但整个界面样式错乱 / 控件变形 / 主题点不动** | 0.5.6 已修同类问题（暗色配色推导里未声明的变量会让整张样式表不发射）。若仍出现：先确认版本 ≥ 0.5.6；仍不行就看浏览器 F12 → Application → Local Storage 里的 `dsh-yizi-themes:bootlog`（最近 60 条启动轨迹，含 `ok:` / `FAIL:` 阶段），把 `FAIL:` 行发回来即可定位 |
 | 装完界面没变化 | ① 装错 profile 了？确认用户用的是 desktop 还是 web；② 版本号没变要 remove → add；③ 是否完全重启 |
 | 主题切换没反应 | 看浏览器 F12 → Console 是否报 `runtime.setThemeId is not a function`（极旧构建）；升级到 0.5.0（插件自带风格主题实现，干净 Harness 开箱即用） |

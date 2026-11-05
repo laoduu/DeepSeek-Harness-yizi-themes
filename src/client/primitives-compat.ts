@@ -18,8 +18,17 @@ export interface IconProps {
   className?: string
 }
 
-/** A platform icon/asset component. */
-export type IconComponent = (props: IconProps) => unknown
+/**
+ * A platform icon/asset component.
+ *
+ * The return type is deliberately loose: the concrete component comes from
+ * whichever Harness generation is loaded, and its own prop/return types are
+ * not part of the plugin's compile surface. Rendering it as a JSX element
+ * works either way; a narrow structural type here would only re-create the
+ * cross-generation typing problem this module exists to avoid.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type IconComponent = (props: IconProps) => any
 
 /**
  * Return the first exported component among `names`.

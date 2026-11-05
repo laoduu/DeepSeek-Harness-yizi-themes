@@ -15,12 +15,23 @@ import {
   CUSTOM_THEME_PREFIX,
   deriveDarkBg,
   deriveDarkBrand,
+  deriveDarkLabel,
   deriveInk,
   deriveLightBg,
+  deriveLightBrand,
   normalizeHex,
 } from './custom-themes.ts'
 import type { CustomThemeDoc } from './custom-themes.ts'
 import { MockPreview } from './MockPreview.tsx'
+import { evaluatePalette, rateContrast } from './contrast.ts'
+import type { ContrastRating } from './contrast.ts'
+
+/** Localized label / tone for one contrast rating. */
+function ratingLabel(rating: ContrastRating, t: (key: string) => string): string {
+  if (rating === 'fail') return t('studio.contrast.fail')
+  if (rating === 'AA-large') return `${t('studio.contrast.large')} (AA)`
+  return rating
+}
 
 /** Props of the studio section. */
 export interface StudioSectionProps {
@@ -133,6 +144,22 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
       setDarkBg(deriveDarkBg(value))
     }
   }
+  // Live WCAG readout for the values that would be saved right now. Cheap
+  // enough to compute on every render (four pairs, no DOM).
+  const checks = evaluatePalette({
+    brand: deriveLightBrand(accent),
+    ink: ink !== '' ? normalizeHex(ink, deriveInk(accent)) : deriveInk(accent),
+    lightBg,
+    darkBg,
+    darkBrand: deriveDarkBrand(accent),
+    darkLabel: deriveDarkLabel(accent, ink.trim() !== '' ? ink : undefined),
+  })
+  const checkLabel = (key: string): string => {
+    if (key === 'brand.on.light') return t('studio.contrast.brand.light')
+    if (key === 'text.on.light') return t('studio.contrast.text.light')
+    if (key === 'brand.on.dark') return t('studio.contrast.brand.dark')
+    return t('studio.contrast.text.dark')
+  }
   const save = (): void => {
     const resolvedName = name.trim() !== '' ? name.trim() : t('studio.defaultName')
     const resolvedAccent = normalizeHex(accent, DEFAULT_ACCENT)
@@ -170,6 +197,26 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
             <span>{t('studio.accent')}</span>
             <input type="color" value={accent} onChange={(e) => { changeAccent(e.target.value) }} />
           </label>
+        </div>
+        <div className="dsw-yizi-contrast">
+          <span className="dsw-yizi-contrast-title">{t('studio.contrast')}</span>
+          <span className="dsw-yizi-contrast-grid">
+            {checks.map((check) => {
+              const tone = check.rating === 'fail'
+                ? 'fail'
+                : (check.rating === 'AA-large' ? 'warn' : 'ok')
+              return (
+                <span key={check.key} className={`dsw-yizi-contrast-item ${tone}`}>
+                  <span className="dsw-yizi-contrast-label">{checkLabel(check.key)}</span>
+                  <span className="dsw-yizi-contrast-ratio">{check.ratio.toFixed(2)}:1</span>
+                  <span className="dsw-yizi-contrast-rating">
+                    {ratingLabel(rateContrast(check.ratio), t)}
+                  </span>
+                </span>
+              )
+            })}
+          </span>
+          <span className="dsw-yizi-field-hint-subtle">{t('studio.contrast.hint')}</span>
         </div>
         <details className="dsw-yizi-studio-advanced">
           <summary>{t('studio.advanced')}</summary>
@@ -243,30 +290,52 @@ export function StudioSection({ customs, t, onApply, onSave, onRemove }: StudioS
       </div>
       {customs.length > 0 && (
         <div className="dsw-yizi-studio-list">
-          {customs.map((doc) => (
-            <div key={doc.id} className="dsw-yizi-studio-item">
-              <MockPreview swatch={[doc.lightBg, doc.accent]} />
-              <span className="dsw-yizi-studio-item-name">{doc.name}</span>
-              <span className="dsw-yizi-studio-item-actions">
-                <button type="button" className="dsw-yizi-studio-action" onClick={() => { onApply(doc.id) }}>
-                  {t('studio.apply')}
-                </button>
-                <button type="button" className="dsw-yizi-studio-action" onClick={() => { startEdit(doc) }}>
-                  {t('studio.edit')}
-                </button>
-                <button
-                  type="button"
-                  className="dsw-yizi-studio-action"
-                  onClick={() => {
-                    if (editingId === doc.id) startNew()
-                    onRemove(doc.id)
-                  }}
+          {customs.map((doc) => {
+            // Worst pair decides the badge: a theme is AAA only when its
+            // weakest body-text pair clears 7:1.
+            const docChecks = evaluatePalette({
+              brand: deriveLightBrand(doc.accent),
+              ink: doc.ink !== undefined && doc.ink !== '' ? doc.ink : deriveInk(doc.accent),
+              lightBg: doc.lightBg,
+              darkBg: doc.darkBg,
+              darkBrand: deriveDarkBrand(doc.accent),
+              darkLabel: deriveDarkLabel(doc.accent, doc.ink),
+            })
+            const worst = docChecks.reduce(
+              (acc, check) => (check.ratio < acc.ratio ? check : acc),
+              docChecks[0],
+            )
+            return (
+              <div key={doc.id} className="dsw-yizi-studio-item">
+                <MockPreview swatch={[doc.lightBg, doc.accent]} />
+                <span className="dsw-yizi-studio-item-name">{doc.name}</span>
+                <span
+                  className={`dsw-yizi-contrast-badge ${worst.rating === 'fail' ? 'fail' : (worst.rating === 'AA-large' ? 'warn' : 'ok')}`}
+                  title={`${checkLabel(worst.key)} ${worst.ratio.toFixed(2)}:1`}
                 >
-                  {t('studio.delete')}
-                </button>
-              </span>
-            </div>
-          ))}
+                  {ratingLabel(worst.rating, t)}
+                </span>
+                <span className="dsw-yizi-studio-item-actions">
+                  <button type="button" className="dsw-yizi-studio-action" onClick={() => { onApply(doc.id) }}>
+                    {t('studio.apply')}
+                  </button>
+                  <button type="button" className="dsw-yizi-studio-action" onClick={() => { startEdit(doc) }}>
+                    {t('studio.edit')}
+                  </button>
+                  <button
+                    type="button"
+                    className="dsw-yizi-studio-action"
+                    onClick={() => {
+                      if (editingId === doc.id) startNew()
+                      onRemove(doc.id)
+                    }}
+                  >
+                    {t('studio.delete')}
+                  </button>
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
       <p className="dsw-yizi-field-hint-subtle">{t('studio.hint')}</p>

@@ -40,7 +40,7 @@ export interface CommandContributionLike {
     readonly searchMode?: 'substring' | 'fuzzy-label'
     searchLabels?(): { placeholder: string; empty: string; noResults: string }
     options(...args: unknown[]): Promise<readonly PopupOption[]>
-    onSelect(...args: unknown[]): void | Promise<void>
+    onSelect(option: PopupOption, ...rest: unknown[]): void | Promise<void>
   }
 }
 
@@ -61,14 +61,26 @@ export interface ThemeCommandDeps {
   setPreference(preference: 'light' | 'dark' | 'system'): void
   /** Bound translate for the plugin's settings namespace. */
   translate(key: string): string
+  /** Pick a random theme different from the current one (action row). */
+  onRandom?: () => void
+  /** Open the transfer-file picker (action row; no-op when unsupported). */
+  onImport?: () => void
+  /** Copy the transfer document to the clipboard (action row). */
+  onExport?: () => void
 }
 
 /** Group identities (names are opaque keys; labels are localized). */
 const STYLE_GROUP = { name: 'style' }
 const MODE_GROUP = { name: 'mode' }
+const ACTION_GROUP = { name: 'action' }
 
 /** Option ids for the preference rows. */
 const PREF_PREFIX = 'pref:'
+
+/** Option ids for plugin actions (not selectable themes). */
+const ACTION_RANDOM = 'action:random'
+const ACTION_IMPORT = 'action:import'
+const ACTION_EXPORT = 'action:export'
 
 /**
  * Register the /theme contribution on cores that provide the commandUi
@@ -132,6 +144,24 @@ export function registerThemeCommand(ctx: Context, deps: ThemeCommandDeps): void
               group: { ...MODE_GROUP, label: t('group.mode') },
               active: preference === 'dark',
             },
+            ...(deps.onRandom || deps.onImport || deps.onExport ? [{
+              id: ACTION_RANDOM,
+              label: t('action.random'),
+              detail: t('action.random.desc'),
+              group: { ...ACTION_GROUP, label: t('group.action') },
+            }] : []),
+            ...(deps.onImport ? [{
+              id: ACTION_IMPORT,
+              label: t('action.import'),
+              detail: t('action.import.desc'),
+              group: { ...ACTION_GROUP, label: t('group.action') },
+            }] : []),
+            ...(deps.onExport ? [{
+              id: ACTION_EXPORT,
+              label: t('action.export'),
+              detail: t('action.export.desc'),
+              group: { ...ACTION_GROUP, label: t('group.action') },
+            }] : []),
           ]
         },
         onSelect: async (option) => {
@@ -140,6 +170,18 @@ export function registerThemeCommand(ctx: Context, deps: ThemeCommandDeps): void
             if (preference === 'light' || preference === 'dark' || preference === 'system') {
               deps.setPreference(preference)
             }
+            return
+          }
+          if (option.id === ACTION_RANDOM) {
+            deps.onRandom?.()
+            return
+          }
+          if (option.id === ACTION_IMPORT) {
+            deps.onImport?.()
+            return
+          }
+          if (option.id === ACTION_EXPORT) {
+            deps.onExport?.()
             return
           }
           deps.backend.setThemeId(option.id)

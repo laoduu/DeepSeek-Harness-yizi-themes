@@ -301,6 +301,28 @@ export function deriveDarkBrand(accent: string): string {
 }
 
 /**
+ * The light-mode brand voice the engine emits (band 0.40–0.62), used by the
+ * studio's contrast readout so the rating matches the saved theme exactly.
+ * @param accent - the accent color.
+ * @returns the light-mode brand color.
+ */
+export function deriveLightBrand(accent: string): string {
+  const A = colorSpec(accent)
+  return ok(clampN(A.L, 0.40, 0.62), Math.min(A.C, 0.26), A.H)
+}
+
+/**
+ * The dark-mode primary text color the engine emits (`label-primary` at the
+ * top of the dark ladder), used by the contrast readout.
+ * @param accent - the accent color.
+ * @returns the dark-mode primary label color.
+ */
+export function deriveDarkLabel(accent: string, inkOpt?: string): string {
+  const S = resolveSpec(accent, inkOpt)
+  return ok(0.85, Math.min(0.05, S.ink.C * 1.2), S.ink.H)
+}
+
+/**
  * The auto-derived ink for an accent (what the editor's '' ink resolves to):
  * the light-mode label-primary the engine will emit.
  * @param accent - the accent color.

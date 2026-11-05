@@ -34,6 +34,11 @@
 - 📐 **品牌尺寸可调**（0.5.4）：左上角 Logo、品牌字样、徽章按同一倍率**整体缩放**（75%–200%，设置 → 外观 → 自定义 → 品牌尺寸），拖动即时生效、无需重启
 - 🔤 **品牌映射**（实验性，默认关闭）：把界面/输出中出现的 "DeepSeek / 深度求索 / Harness" 替换为你设定的品牌词（开启后也绝不改写你正在输入的内容）
 - ⌨️ **`/theme` 命令与 Doctor**（0.5.6）：输入框敲 `/theme` 直接切主题、列主题；`/theme doctor` 输出安装自检（模块命中、槽位、令牌覆盖率）
+- 🎯 **对比度实时检查**（0.5.7）：主题工作室在编辑时按 WCAG 2.1 实时计算「品牌/文字 × 亮/暗底」四组对比度并给出 AAA / AA / 仅大字号 / 不达标，已存主题列表也带最差分项徽标——自建主题好不好看凭直觉，能不能读有数字
+- 💾 **配置备份与迁移**（0.5.7）：自定义主题 + 品牌设置可一键导出成 JSON、一键导入（同名主题覆盖更新）；解决 Web 版与桌面版、不同浏览器各自为政的 localStorage 孤岛，也让主题包可以发给别人
+- 📱 **窄屏与触屏适配**（0.5.7）：主题网格、工作室编辑器、已存列表、映射表在手机宽度下自动换行 / 降列，触屏设备增大点击目标
+- 🎲 **`/theme` 操作行**（0.5.7）：弹出菜单里新增「随机换一个主题 / 导入配置 / 导出配置」
+- 🧪 **发布门禁**（0.5.7）：类型检查（`tsc --noEmit`，专抓未声明标识符这类致命错误）+ 22 项纯逻辑自检 + 真实 bundle 的双次 apply 崩溃回归，全部跑在 CI 上
 - 📍 **随处可切换**：会话头部右上角 + 新会话（无对话）时的浮动按钮
 
 ---
@@ -73,10 +78,10 @@
 
 ### 方式一：从 GitHub Release 下载 tgz（推荐）
 
-1. 下载 `dsh-yizi-themes-0.5.6.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
+1. 下载 `dsh-yizi-themes-0.5.7.tgz` —— 在 [Releases 页面](https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases) 点击下载，或直接命令行拉取：
 
 ```bash
-curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.6/dsh-yizi-themes-0.5.6.tgz
+curl -L -o dsh-yizi-themes-0.5.7.tgz https://github.com/laoduu/DeepSeek-Harness-yizi-themes/releases/download/v0.5.7/dsh-yizi-themes-0.5.7.tgz
 ```
 
 2. 停掉正在运行的 `dsh web`（Ctrl+C）；
@@ -84,7 +89,7 @@ curl -L -o dsh-yizi-themes-0.5.6.tgz https://github.com/laoduu/DeepSeek-Harness-
 
 ```bash
 cd <你的 deepseek-harness 路径>
-pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.6.tgz
+pnpm dsh plugin --profile web add /path/to/dsh-yizi-themes-0.5.7.tgz
 ```
 
 > 💡 **桌面版（DSH Desktop App）用户**：把 `--profile web` 换成 `--profile desktop`，
@@ -152,6 +157,25 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 
 任何字段留空即保持自动推导。保存后仍可再次「编辑」，删除即时生效。
 
+**对比度实时检查**（0.5.7）：编辑时下方实时给出四组 WCAG 2.1 对比度——品牌 / 亮底、文字 / 亮底、品牌 / 暗底、文字 / 暗底——并标注 AAA（≥7:1）/ AA（≥4.5:1）/ 仅大字号（≥3:1）/ 不达标。已存主题列表的徽标取其中**最差**的一组，鼠标悬停可看具体关系与分值。配色好不好看是主观的，能不能读有客观数字。
+
+---
+
+## 💾 配置备份与迁移（0.5.7）
+
+设置 → 外观 → **配置备份**：把「自定义主题 + 品牌设置」整体导出为 JSON，或从 JSON 导入。
+
+| 场景 | 用法 |
+|---|---|
+| **换浏览器 / 换设备** | 旧环境「导出 JSON」→ 新环境「导入 JSON」 |
+| **Web 版 ↔ 桌面版搬家** | 两个 profile 的 localStorage 互不相通，用这条路径搬运 |
+| **改主题前留个底** | 导出即备份，改坏了导入回来 |
+| **把主题包发给别人** | 别人导入你的 JSON 就能用上同一套主题 + 品牌 |
+
+导入规则：**按 id 合并**——同名主题被覆盖更新（不会堆出重复项），新主题追加到列表末尾；文件里的品牌设置与当前主题一起应用。缺字段、坏条目的部分会被跳过并提示，不会整份失败。
+
+也可以在输入框敲 `/theme`，在弹出的菜单底部用「随机换一个主题 / 导入配置 / 导出配置」三行操作。
+
 ---
 
 ## 🖌️ 自定义品牌
@@ -165,7 +189,7 @@ pnpm dsh plugin --profile web add  /path/to/dsh-yizi-themes-<version>.tgz
 | **徽章字样** | 品牌文字旁的徽章标签（默认 `HARNESS`） |
 | **新会话标题** | 新会话页标题文案（默认 `探索未至之境`） |
 | **品牌尺寸** | 滑块整体缩放左上角 Logo、品牌字样与徽章（75%–200%，默认 100%），拖动即时生效、无需重启；放大时侧边栏品牌行自动留出空间，不会裁切 |
-| **品牌映射** | 开关（默认关闭，实验性）+ 映射表：把界面/输出中出现的 "DeepSeek Harness / DeepSeek / 深度求索 / Harness" 替换为设定词；开启后也不会改写输入框内容 |
+| **品牌映射** | 开关（默认关闭，实验性）+ 映射表：把界面/输出中出现的 "DeepSeek Harness / DeepSeek / 深度求索 / Harness" 替换为设定词；**代码块、终端输出与输入框内容不会被改写**（那里它们是数据，不是品牌） |
 
 **颜色自动跟随主题**：品牌字样、徽章背景、Logo 容器颜色统一使用 `--dsw-alias-brand-primary`，
 切换任意风格主题或明暗模式时自动变化。
@@ -227,7 +251,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 
 **Q: 装上插件后 DeepSeek Harness Desktop 起不来？**
 0.4.0 及更早的客户端 bundle 仍 `require('@deepseek-ai/dsh-client-runtime/client')`，而该包在 `dsh-client-store` 一代已被**整包删除**——桌面版的 web 引导是"任一 entry 激活失败即整体中止"，所以应用直接黑屏/打不开。0.5.0 已改用本代平台模块（`@deepseek-ai/dsh-client-store`）并适配收窄后的 `ui-theme` schema。
-已经装坏、界面进不去时：命令行执行 `dsh plugin --profile desktop remove dsh-yizi-themes`（不需要打开界面），再完全退出并重启桌面版即可恢复；然后升级到最新版（当前 0.5.6）重新安装。
+已经装坏、界面进不去时：命令行执行 `dsh plugin --profile desktop remove dsh-yizi-themes`（不需要打开界面），再完全退出并重启桌面版即可恢复；然后升级到最新版（当前 0.5.7）重新安装。
 
 **Q: 装上插件后启动失败（`web boot: 1 entry did not activate` / `dsh-yizi-themes: failed`）？**
 0.5.6 起插件**不会再让启动失败**：apply 的每个阶段都隔离兜底、插槽注册幂等，被重复加载（热重载 / 组合重载）也照常工作。若仍看到该报错，说明装的是 0.5.5 及更早版本（旧包在启动早期抛错会中止整个客户端引导）——`remove` 后重装 0.5.6 即可。
@@ -246,7 +270,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 0.3.x 起已适配。rc.8 把侧边栏品牌从单个 `BrandWordmark`（`viewBox="0 0 182 24"`）改成了官方品牌槽位（`sidebar.brand.mark` / `sidebar.brand.name` / `conversation.hero.brand.mark`）。插件改为注册这些槽位来渲染自定义 Logo / 字样 / 徽章 / 新会话标题——槽位是官方扩展面，**后续 Harness 升级只要保留槽位契约即可继续工作**；无槽位的旧核心自动回退到原 viewBox 注入路径。升级后若仍显示旧版，请先 `remove` 再 `add`（同版本内容变了 pnpm 会报 "Already up to date"）。
 
 **Q: Harness 升级到 v0.1.2-alpha.1 后，插件启动报 `dsh-client-runtime` missed the module table？**
-官方在新版移除了 `@deepseek-ai/dsh-client-runtime` 包，旧版插件（0.3.x）仍引用它导致加载失败。**升级到 0.4.0 及以上（当前最新 0.5.6）**（已迁移到 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`）。若你已安装 0.3.x，先 `remove` 再 `add` 最新版，并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
+官方在新版移除了 `@deepseek-ai/dsh-client-runtime` 包，旧版插件（0.3.x）仍引用它导致加载失败。**升级到 0.4.0 及以上（当前最新 0.5.7）**（已迁移到 `@deepseek-ai/dsh-client-store` / `@deepseek-ai/cordis`）。若你已安装 0.3.x，先 `remove` 再 `add` 最新版，并完全重启 `dsh web`（Ctrl+C 后重启）+ 浏览器强刷 Ctrl+Shift+R。
 
 **Q: 想让 agent 帮我装插件？**
 把 [Agent 安装指引](docs/AGENT-SKILL.md) 交给 agent 即可。
@@ -257,7 +281,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 
 欢迎提交 Pull Request：
 
-- **新主题**：见 [开发日志](docs/DEVLOG.md) 与 `scripts/gen-themes.mjs`（CSS → TS 生成器）；
+- **新主题**：19 套主题的 CSS 设计源在 [`themes/css/`](themes/css)，改完用 `scripts/gen-themes.mjs` 重新生成 `src/client/themes.ts`（`node scripts/gen-themes.mjs themes/css src/client/themes.ts`）；新增主题照同一格式放一个 CSS 文件即可。详见 [开发日志](docs/DEVLOG.md)；
 - **Bug 修复**：Harness 版本更新导致的适配问题；
 - **文档改进**：安装教程、常见问题。
 
@@ -267,6 +291,7 @@ pnpm dsh plugin --profile web remove dsh-yizi-themes
 
 - [版本日志](CHANGELOG.md)
 - [开发日志](docs/DEVLOG.md)
+- [兼容审计：Harness 0.2.2-rc.1](docs/COMPAT-0.2.2-rc.1.md)
 - [Agent 安装指引](docs/AGENT-SKILL.md)
 
 ---
